@@ -29,6 +29,7 @@ const CSV_TYPE_TO_FILE_TYPE: Dictionary = {
 	CSVConfig.CSVType.GAME_SETTINGS: 5,  # FileType.SETTINGS
 	CSVConfig.CSVType.SFX: 6,  # FileType.SFX
 	CSVConfig.CSVType.MUSIC: 7,  # FileType.MUSIC
+	CSVConfig.CSVType.BLIP: 8,  # FileType.BLIP
 	CSVConfig.CSVType.UNKNOWN: 0  # FileType.NONE
 }
 
@@ -111,6 +112,7 @@ func _get_container_for_type(file_type: int) -> PanelContainer:
 		5: return _containers.get("game_settings")
 		6: return _containers.get("sfx")
 		7: return _containers.get("music")
+		8: return _containers.get("blips")
 	return null
 
 
@@ -123,5 +125,6 @@ func _get_all_containers() -> Array:
 		_containers.get("npc_properties"),
 		_containers.get("game_settings"),
 		_containers.get("sfx"),
-		_containers.get("music")
+		_containers.get("music"),
+		_containers.get("blips")
 	]

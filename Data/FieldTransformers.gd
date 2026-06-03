@@ -55,6 +55,8 @@ static func transform(raw_value: String, field_type: String, default_value = nul
 			return _apply_default_if_empty(parse_array(raw_value), default_value, [])
 		"array_int":
 			return _apply_default_if_empty(parse_array_int(raw_value, error_log, context, row_id, line_number), default_value, [])
+		"float_range":
+			return _apply_default_if_empty(parse_float_range(raw_value, error_log, context, row_id, line_number, field_name if not field_name.is_empty() else context), default_value, [1.0, 1.0])
 		"scene_props":
 			return _apply_default_if_empty(parse_scene_props(raw_value, error_log, context, row_id, line_number, field_name if not field_name.is_empty() else "scene_properties"), default_value, [])
 		"next_line":
@@ -91,6 +93,8 @@ static func transform(raw_value: String, field_type: String, default_value = nul
 			return _apply_default_if_empty(parse_settings_value(raw_value, default_value), default_value, "")
 		"give_item":
 			return _apply_default_if_empty(parse_give_item(raw_value, default_value), default_value, [])
+		"cg":
+			return _apply_default_if_empty(parse_cg(raw_value, default_value), default_value, [])
 		_:
 			return raw_value
 
@@ -122,7 +126,9 @@ static func _get_empty_default_for_type(field_type: String, default_value: Varia
 			return default_value if default_value != null else 0.0
 		"bool", "alcohol_flag":
 			return default_value if default_value != null else false
-		"array", "array_int", "scene_props", "next_line", "npc_property_array", "give_item", "special_effects":
+		"float_range":
+			return default_value if default_value != null else [1.0, 1.0]
+		"array", "array_int", "scene_props", "next_line", "npc_property_array", "give_item", "special_effects", "cg":
 			return default_value if default_value != null else []
 		"traits":
 			return default_value if default_value != null else {}
@@ -173,6 +179,32 @@ static func parse_array_int(field: String, error_log: Array = [], context: Strin
 			push_warning(msg)
 			_log_error(error_log, msg, row_id, line_number, context)
 	return result
+
+
+## Parse min/max range menjadi array dua float (mis. "0.9,1.1" -> [0.9, 1.1])
+static func parse_float_range(field: String, error_log: Array = [], context: String = "", row_id: String = "", line_number: int = 0, field_name: String = "") -> Variant:
+	if _is_all_empty_parts(field):
+		return ""
+
+	var values: Array = []
+	var parts = field.split(",")
+	for i in range(parts.size()):
+		var trimmed = parts[i].strip_edges()
+		if trimmed.is_empty():
+			continue
+		if trimmed.is_valid_float():
+			values.append(trimmed.to_float())
+		else:
+			var msg = "Float tidak valid dalam range: '%s' pada index %d di %s. Nilai dilewati." % [trimmed, i, context]
+			push_warning(msg)
+			_log_error(error_log, msg, row_id, line_number, field_name)
+
+	if values.size() >= 2:
+		return [values[0], values[1]]
+	if values.size() == 1:
+		return [values[0], values[0]]
+
+	return ""
 
 
 ## Parse scene_properties dengan konversi boolean
@@ -456,3 +488,25 @@ static func parse_give_item(field: String, default_value = []) -> Variant:
 	
 	return result
 
+
+## Parse cg field: [string, [array]]
+static func parse_cg(field: String, default_value = []) -> Variant:
+	var trimmed = field.strip_edges()
+	if trimmed.is_empty():
+		return default_value if default_value != null else []
+	
+	if _is_all_empty_parts(trimmed):
+		return ""
+	
+	var parts = trimmed.split(",")
+	if parts.is_empty():
+		return default_value if default_value != null else []
+	
+	var main_value = parts[0].strip_edges()
+	var sub_values: Array = []
+	for i in range(1, parts.size()):
+		var sub = parts[i].strip_edges()
+		if not sub.is_empty():
+			sub_values.append(sub)
+	
+	return [main_value, sub_values]

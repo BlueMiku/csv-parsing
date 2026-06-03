@@ -23,6 +23,7 @@ var no_root_wrapper: bool = false
 var _is_recipe_config: bool = false
 var _force_root_wrapper: bool = false
 var _default_root_name: String = ""
+var value_field: String = ""
 
 ## SET Functions
 func set_key_order(order: Array) -> JSONGenerator:
@@ -52,6 +53,7 @@ func configure_for_dialog() -> JSONGenerator:
 	_is_recipe_config = false
 	_force_root_wrapper = false
 	_default_root_name = ""
+	value_field = ""
 	# no_root_wrapper ditentukan oleh UI (jika root name kosong = true)
 	return self
 
@@ -61,6 +63,7 @@ func configure_for_ingredient() -> JSONGenerator:
 	_is_recipe_config = false
 	_force_root_wrapper = false
 	_default_root_name = ""
+	value_field = ""
 	# no_root_wrapper ditentukan oleh UI (jika root name kosong = true)
 	return self
 
@@ -73,6 +76,7 @@ func configure_for_recipe() -> JSONGenerator:
 	_is_recipe_config = true
 	_force_root_wrapper = true
 	_default_root_name = "Foods"
+	value_field = ""
 	return self
 
 func configure_for_beverage() -> JSONGenerator:
@@ -83,6 +87,7 @@ func configure_for_beverage() -> JSONGenerator:
 	_is_recipe_config = false
 	_force_root_wrapper = true
 	_default_root_name = "Beverage"
+	value_field = ""
 	return self
 
 func configure_for_decoration() -> JSONGenerator:
@@ -93,17 +98,19 @@ func configure_for_decoration() -> JSONGenerator:
 	_is_recipe_config = false
 	_force_root_wrapper = true
 	_default_root_name = "Decorations"
+	value_field = ""
 	return self
 
 
 func configure_for_sfx() -> JSONGenerator:
 	key_order = DataSchemas.get_sfx_key_order()
 	output_format = OutputFormat.ID_KEYED_DICT
-	root_name = "SFX"
-	no_root_wrapper = false
+	root_name = ""
+	no_root_wrapper = true
 	_is_recipe_config = false
-	_force_root_wrapper = true
-	_default_root_name = "SFX"
+	_force_root_wrapper = false
+	_default_root_name = ""
+	value_field = ""
 	return self
 
 func configure_for_music() -> JSONGenerator:
@@ -114,6 +121,7 @@ func configure_for_music() -> JSONGenerator:
 	_is_recipe_config = false
 	_force_root_wrapper = true
 	_default_root_name = "Music"
+	value_field = ""
 	return self
 
 func configure_for_key_item() -> JSONGenerator:
@@ -124,6 +132,7 @@ func configure_for_key_item() -> JSONGenerator:
 	_is_recipe_config = false
 	_force_root_wrapper = true
 	_default_root_name = "KeyItems"
+	value_field = ""
 	return self
 
 func configure_for_game_settings() -> JSONGenerator:
@@ -134,6 +143,18 @@ func configure_for_game_settings() -> JSONGenerator:
 	_is_recipe_config = false
 	_force_root_wrapper = false
 	_default_root_name = ""
+	value_field = ""
+	return self
+
+func configure_for_blip() -> JSONGenerator:
+	key_order = DataSchemas.get_blip_key_order()
+	output_format = OutputFormat.ID_KEYED_DICT
+	root_name = ""
+	no_root_wrapper = true
+	_is_recipe_config = false
+	_force_root_wrapper = false
+	_default_root_name = ""
+	value_field = ""
 	return self
 
 func configure_for_array(custom_key_order: Array = [], root: String = "Data") -> JSONGenerator:
@@ -144,6 +165,7 @@ func configure_for_array(custom_key_order: Array = [], root: String = "Data") ->
 	_is_recipe_config = false
 	_force_root_wrapper = false
 	_default_root_name = ""
+	value_field = ""
 	return self
 
 ## Fungsi untuk membuat JSON dari data dan menyimpannya ke file
@@ -189,6 +211,8 @@ func generate_json_string(data) -> String:
 	# Jika no_root_wrapper = true, gunakan format tanpa root
 	if no_root_wrapper:
 		if data is Dictionary:
+			if output_format == OutputFormat.ID_KEYED_DICT:
+				return _stringify_id_keyed_dict_no_root(data)
 			return _stringify_grouped_no_root(data)
 		elif data is Array:
 			return _stringify_array_no_root(data)
@@ -345,19 +369,71 @@ func _stringify_id_keyed_dict(data: Dictionary) -> String:
 		var entry_id = ids[i]
 		var row = flat[entry_id]
 		var comma = "," if i < ids.size() - 1 else ""
-		lines.append("%s\"%s\": {" % [indent_string.repeat(2), entry_id])
-		# Output fields in key_order, skip "id" field itself
-		var ordered_fields = key_order if not key_order.is_empty() else row.keys()
-		var field_list = ordered_fields.filter(func(k): return k != "id" and row.has(k))
-		for f_idx in range(field_list.size()):
-			var field = field_list[f_idx]
-			var field_comma = "," if f_idx < field_list.size() - 1 else ""
-			lines.append("%s\"%s\": %s%s" % [indent_string.repeat(3), field, _value_to_json(row[field], 3), field_comma])
-		lines.append("%s}%s" % [indent_string.repeat(2), comma])
+		if row is Dictionary:
+			if not value_field.is_empty() and row.has(value_field):
+				lines.append("%s\"%s\": %s%s" % [indent_string.repeat(2), entry_id, _value_to_json(row[value_field], 2), comma])
+			else:
+				lines.append("%s\"%s\": {" % [indent_string.repeat(2), entry_id])
+				# Output fields in key_order, skip "id" field itself
+				var ordered_fields = key_order if not key_order.is_empty() else row.keys()
+				var field_list = ordered_fields.filter(func(k): return k != "id" and row.has(k))
+				for f_idx in range(field_list.size()):
+					var field = field_list[f_idx]
+					var field_comma = "," if f_idx < field_list.size() - 1 else ""
+					lines.append("%s\"%s\": %s%s" % [indent_string.repeat(3), field, _value_to_json(row[field], 3), field_comma])
+				lines.append("%s}%s" % [indent_string.repeat(2), comma])
+		else:
+			lines.append("%s\"%s\": %s%s" % [indent_string.repeat(2), entry_id, _value_to_json(row, 2), comma])
 	
 	lines.append("%s}" % indent_string)
 	lines.append("}")
 	
+	return "\n".join(lines)
+
+
+## Custom stringify untuk id-keyed dict tanpa root wrapper: { "id": { ... }, ... }
+func _stringify_id_keyed_dict_no_root(data: Dictionary) -> String:
+	var lines: Array = []
+	lines.append("{")
+
+	# Flatten semua entries ke satu dict id -> row_data
+	var flat: Dictionary = {}
+	for key in data:
+		var val = data[key]
+		if val is Dictionary:
+			var first = val.values()[0] if not val.is_empty() else null
+			if first is Dictionary:
+				# grouped: { group: { id: row_data } }
+				for inner_key in val:
+					flat[inner_key] = val[inner_key]
+			else:
+				# flat: { id: row_data }
+				flat[key] = val
+		else:
+			flat[key] = val
+
+	var ids = flat.keys()
+	for i in range(ids.size()):
+		var entry_id = ids[i]
+		var row = flat[entry_id]
+		var comma = "," if i < ids.size() - 1 else ""
+
+		if row is Dictionary:
+			if not value_field.is_empty() and row.has(value_field):
+				lines.append("%s\"%s\": %s%s" % [indent_string, entry_id, _value_to_json(row[value_field], 1), comma])
+			else:
+				lines.append("%s\"%s\": {" % [indent_string, entry_id])
+				var ordered_fields = key_order if not key_order.is_empty() else row.keys()
+				var field_list = ordered_fields.filter(func(k): return k != "id" and row.has(k))
+				for f_idx in range(field_list.size()):
+					var field = field_list[f_idx]
+					var field_comma = "," if f_idx < field_list.size() - 1 else ""
+					lines.append("%s\"%s\": %s%s" % [indent_string.repeat(2), field, _value_to_json(row[field], 2), field_comma])
+				lines.append("%s}%s" % [indent_string, comma])
+		else:
+			lines.append("%s\"%s\": %s%s" % [indent_string, entry_id, _value_to_json(row, 1), comma])
+
+	lines.append("}")
 	return "\n".join(lines)
 
 ## Fungsi untuk menggabungkan semua data dalam dictionary

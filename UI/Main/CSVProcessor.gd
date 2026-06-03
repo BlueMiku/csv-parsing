@@ -60,7 +60,10 @@ func process_single_csv(csv_path: String, output_path: String, csv_type: CSVConf
 
 	# Generate JSON
 	processing_started.emit("Membuat JSON...")
-	if root_name.is_empty():
+	if csv_type == CSVConfig.CSVType.SFX:
+		_json_generator.set_no_root_wrapper(true)
+		_json_generator.set_root_name("")
+	elif root_name.is_empty():
 		_json_generator.set_no_root_wrapper(true)
 	else:
 		_json_generator.set_no_root_wrapper(false)
@@ -94,9 +97,8 @@ func process_single_csv(csv_path: String, output_path: String, csv_type: CSVConf
 	
 	# Tampilkan warning jika ada
 	if _parser.has_conversion_errors():
-		status_msg = "Selesai dengan peringatan! %d %s diproses" % [data_to_export.size(), group_label]
 		if fatal_array_issue:
-			status_msg = "Peringatan fatal: array wajib 5 elemen. File belum disimpan. Buka editor untuk perbaiki lalu Save."
+			status_msg = "Peringatan fatal: array wajib 5 elemen. File belum disimpan."
 		processing_warning.emit(
 			_parser.get_error_messages(),
 			output_path,
@@ -105,7 +107,6 @@ func process_single_csv(csv_path: String, output_path: String, csv_type: CSVConf
 			json_string if fatal_array_issue else "",
 			fatal_array_issue
 		)
-		processing_completed.emit(true, status_msg)
 	else:
 		processing_completed.emit(true, status_msg)
 
@@ -254,7 +255,14 @@ func process_patron_csv(csv_path: String, output_path: String) -> void:
 		
 		if errors.size() > 0:
 			processing_completed.emit(true, "JSON berhasil dibuat dengan %d warning: %s" % [errors.size(), file_path])
-			processing_error.emit(errors)
+			processing_warning.emit(
+				errors,
+				file_path,
+				[] as Array[String],
+				[] as Array[Dictionary],
+				"",
+				false
+			)
 		else:
 			processing_completed.emit(true, "JSON berhasil dibuat: " + file_path)
 		

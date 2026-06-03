@@ -23,7 +23,8 @@ static func get_dialog_schema() -> Dictionary:
 		"goto": {"header_name": "goto", "type": "string", "default": ""},
 		"special_effects": {"header_name": "special_effects", "type": "array", "default": []},
 		"sound_effect": {"header_name": "sound_effects", "type": "string", "default": ""},
-		"music_effect": {"header_name": "music_effect", "type": "string", "default": ""}
+		"music_effect": {"header_name": "music_effect", "type": "string", "default": ""},
+		"cg": {"header_name": "cg", "type": "cg", "default": []},
 	}
 
 ## Key order untuk dialog JSON output
@@ -33,7 +34,7 @@ static func get_dialog_key_order() -> Array:
 		"left", "middle_left", "middle", "middle_right", "right",
 		"scene_properties", "dialogue_choice", "next_line_properties",
 		"give_item", "chapterid", "goto",
-		"special_effects", "sound_effect", "music_effect"
+		"special_effects", "sound_effect", "music_effect", "cg"
 	]
 
 ## Dialog parser configuration
@@ -271,14 +272,14 @@ static func get_decoration_config() -> Dictionary:
 static func get_sfx_schema() -> Dictionary:
 	return {
 		"id": {"header_name": "id", "type": "string", "default": "", "is_id": true},
-		"filename": {"header_name": "file_name", "type": "array", "default": []},
+		"file_name": {"header_name": "file_name", "type": "array", "default": []},
 		"gain": {"header_name": "gain", "type": "float", "default": 0.0},
 		"pitch_min_max": {"header_name": "pitch_min_max", "type": "float_range", "default": [1.0, 1.0]}
 	}
 
 ## Key order untuk SFX JSON output
 static func get_sfx_key_order() -> Array:
-	return ["filename", "gain", "pitch_min_max"]
+	return ["file_name", "gain", "pitch_min_max"]
 
 ## SFX parser configuration
 static func get_sfx_config() -> Dictionary:
@@ -438,6 +439,29 @@ static func get_game_settings_config() -> Dictionary:
 		"output_format": "settings_grouped"  # Custom format untuk grouping by prefix
 	}
 
+## Schema untuk Blips
+static func get_blip_schema() -> Dictionary:
+	return {
+		"character_nick": {"header_name": "character_nick", "type": "string", "default": "", "is_id": true},
+		"blips": {"header_name": "text_blip", "type": "string", "default": ""},
+		"thumb": {"header_name": "thumb", "type": "string", "default": ""},
+	}
+
+## Key order untuk Blips JSON output
+static func get_blip_key_order() -> Array:
+	return ["blips", "thumb"]
+
+static func get_blip_config() -> Dictionary:
+	return {
+	"schema": get_blip_schema(),
+	"group_header": "",
+	"header_row": 0,
+	"start_row": 1,
+	"id_header": "character_nick",
+	"key_order": get_blip_key_order(),
+	"skip_duplicate_id": true
+	}
+
 ## Patron System Configuration - Detection by header patterns
 static func get_patron_files_config() -> Dictionary:
 	return {
@@ -462,7 +486,3 @@ static func get_patron_files_config() -> Dictionary:
 			"required_headers": ["idletalkreqs", "character_name", "chapter_name"]
 		}
 	}
-
-
-
-	

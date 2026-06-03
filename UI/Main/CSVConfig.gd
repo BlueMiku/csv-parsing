@@ -15,6 +15,7 @@ enum CSVType {
 	GAME_SETTINGS,
 	SFX,
 	MUSIC,
+	BLIP,
 	UNKNOWN
 }
 
@@ -97,7 +98,7 @@ const TYPE_CONFIGS: Dictionary = {
 	CSVType.SFX: {
 		"name": "sfx",
 		"group_label": "sfx_files",
-		"root_name": "SFX",
+		"root_name": "",
 		"header_patterns": [["no.", "implemented", "id", "gain", "pitch_min_max", "file_name"]],
 		"required_headers": ["id", "file_name", "gain"]
 	},
@@ -107,6 +108,13 @@ const TYPE_CONFIGS: Dictionary = {
 		"root_name": "Music",
 		"header_patterns": [["no.", "filename", "offset", "script code", "penggunaan"]],
 		"required_headers": ["filename", "script code"]
+	},
+	CSVType.BLIP: {
+		"name": "blip",
+		"group_label": "blips",
+		"root_name": "",
+		"header_patterns": [["character_nick", "text_blip"]],
+		"required_headers": ["character_nick", "text_blip"]
 	},
 	CSVType.UNKNOWN: {
 		"name": "unknown",
@@ -198,6 +206,11 @@ static func _detect_from_header(header: String, suppress_warning: bool = false) 
 	for pattern in TYPE_CONFIGS[CSVType.MUSIC]["header_patterns"]:
 		if _matches_pattern(header, pattern):
 			return CSVType.MUSIC
+
+	# Check BLIP type
+	for pattern in TYPE_CONFIGS[CSVType.BLIP]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.BLIP
 	
 	# Check KEY_ITEM type
 	for pattern in TYPE_CONFIGS[CSVType.KEY_ITEM]["header_patterns"]:
@@ -255,6 +268,8 @@ static func configure_parser(parser: Node, csv_type: CSVType) -> void:
 			pass # Tipe NPC_PROPERTIES menggunakan multi-file parser di NPCProperties
 		CSVType.GAME_SETTINGS:
 			parser.configure_for_game_settings()
+		CSVType.BLIP:
+			parser.configure_for_blip()
 
 
 ## Configure generator berdasarkan tipe CSV
@@ -285,6 +300,8 @@ static func configure_generator(generator: Node, csv_type: CSVType) -> void:
 			pass # Tipe NPC_PROPERTIES menggunakan multi-file generator di NPCProperties
 		CSVType.GAME_SETTINGS:
 			generator.configure_for_game_settings()
+		CSVType.BLIP:
+			generator.configure_for_blip()
 
 
 ## Konfigurasi parser dan generator secara bersamaan

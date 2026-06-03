@@ -30,13 +30,14 @@ extends Control
 @onready var game_settings_container: PanelContainer = %GameSettingsContainer
 @onready var sfx_container: PanelContainer = %SFXContainer
 @onready var music_container: PanelContainer = %MusicContainer
+@onready var blips_container: PanelContainer = %BlipsContainer
 @onready var type_detection_section: VBoxContainer = $Panel/VBoxContainer/TypeDetectionSection
 
 @onready var output_section: HBoxContainer = $Panel/VBoxContainer/OutputSection
 @onready var root_name_section: HBoxContainer = $Panel/VBoxContainer/RootNameSection
 @onready var buttons_container: HBoxContainer = $Panel/VBoxContainer/ButtonsContainer
 
-enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC }
+enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP }
 
 # Managers
 var _type_indicator_manager: FileTypeIndicatorManager
@@ -85,6 +86,7 @@ func _init_managers() -> void:
 	_patron_manager = PatronsManagerScript.new(patron_checkbox_container)
 	_ui_state_manager = UIStateManager.new(status_label)
 	_dialog_manager = DialogManager.new(self)
+	_dialog_manager.setup()
 	_validator = CSVTypeValidator.new()
 
 	# Load preferences
@@ -105,7 +107,8 @@ func _create_type_indicator_manager() -> FileTypeIndicatorManager:
 		"npc_properties": npc_properties_container,
 		"game_settings": game_settings_container,
 		"sfx": sfx_container,
-		"music": music_container
+		"music": music_container,
+		"blips": blips_container
 	}
 	var manager = FileTypeIndicatorManager.new(containers, type_detection_section)
 	manager.init_indicators()
@@ -337,6 +340,31 @@ func _show_errors_deferred(errors: Array) -> void:
 	_dialog_manager.show_error_report(errors)
 
 func _on_processing_warning(errors: Array, json_path: String, warning_ids: Array[String], warning_details: Array[Dictionary], json_text: String, prevent_auto_save: bool) -> void:
+	# Susun ringkasan bagian yang bermasalah dari warning_details
+	var affected_ids: Array[String] = []
+	for detail in warning_details:
+		var row_id = detail.get("row_id", "")
+		if not row_id.is_empty() and row_id not in affected_ids:
+			affected_ids.append(row_id)
+	
+	# Jika tidak ada dari detail, gunakan warning_ids
+	if affected_ids.is_empty():
+		for wid in warning_ids:
+			if not wid.is_empty() and wid not in affected_ids:
+				affected_ids.append(wid)
+	
+	var warning_msg: String
+	if prevent_auto_save:
+		warning_msg = "Warning fatal: %d baris bermasalah (file belum disimpan)" % errors.size()
+	else:
+		warning_msg = "Selesai dengan %d peringatan" % errors.size()
+		if affected_ids.size() > 0:
+			var preview := ", ".join(affected_ids.slice(0, mini(5, affected_ids.size())))
+			if affected_ids.size() > 5:
+				preview += " ... (+%d lagi)" % (affected_ids.size() - 5)
+			warning_msg += " — Bagian bermasalah: [%s]" % preview
+	
+	_ui_state_manager.show_warning(warning_msg)
 	_dialog_manager.show_error_report_with_navigation(errors, json_path, warning_ids, warning_details, json_text, prevent_auto_save)
 
 func _on_merge_confirmed() -> void:
@@ -368,7 +396,8 @@ func _is_item_type(csv_type: CSVConfig.CSVType) -> bool:
 		CSVConfig.CSVType.RECIPE,
 		CSVConfig.CSVType.BEVERAGE,
 		CSVConfig.CSVType.DECORATION,
-		CSVConfig.CSVType.KEY_ITEM
+		CSVConfig.CSVType.KEY_ITEM,
+		CSVConfig.CSVType.BLIP
 	]
 
 func _validate_paths(csv_path: String, output_path: String) -> bool:
@@ -411,6 +440,9 @@ func _update_sections_visibility() -> void:
 			output_section.visible = true
 			buttons_container.visible = true
 		FileType.MUSIC:
+			output_section.visible = true
+			buttons_container.visible = true
+		FileType.BLIP:
 			output_section.visible = true
 			buttons_container.visible = true
 

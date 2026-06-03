@@ -18,7 +18,8 @@ func validate_file(path: String, detected_type: CSVConfig.CSVType, patron_loader
 		CSVConfig.CSVType.NPC_PROPERTIES, \
 		CSVConfig.CSVType.GAME_SETTINGS, \
 		CSVConfig.CSVType.SFX, \
-		CSVConfig.CSVType.MUSIC:
+		CSVConfig.CSVType.MUSIC, \
+		CSVConfig.CSVType.BLIP:
 			return { "valid": true }
 
 		_:
@@ -60,7 +61,8 @@ func validate_quick(path: String, detected_type: CSVConfig.CSVType) -> Dictionar
 		CSVConfig.CSVType.NPC_PROPERTIES, \
 		CSVConfig.CSVType.GAME_SETTINGS, \
 		CSVConfig.CSVType.SFX, \
-		CSVConfig.CSVType.MUSIC:
+		CSVConfig.CSVType.MUSIC, \
+		CSVConfig.CSVType.BLIP:
 			return { "valid": true }
 
 		_:
@@ -85,5 +87,6 @@ static func get_supported_types() -> Array:
 		CSVConfig.CSVType.NPC_PROPERTIES,
 		CSVConfig.CSVType.GAME_SETTINGS,
 		CSVConfig.CSVType.SFX,
-		CSVConfig.CSVType.MUSIC
+		CSVConfig.CSVType.MUSIC,
+		CSVConfig.CSVType.BLIP
 	]

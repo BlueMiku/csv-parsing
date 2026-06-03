@@ -104,6 +104,50 @@ static func convert_floats_to_ints(data: Variant) -> Variant:
 		return data
 
 
+## Memecah teks CSV menjadi record logis (newline di dalam field berkutip tetap satu record)
+static func split_csv_records(csv_text: String) -> Array:
+	var records: Array = []
+	var current_record := ""
+	var in_quotes := false
+	var i := 0
+
+	while i < csv_text.length():
+		var c: String = csv_text[i]
+		if c == '"':
+			if in_quotes and i + 1 < csv_text.length() and csv_text[i + 1] == '"':
+				current_record += '""'
+				i += 1
+			else:
+				in_quotes = not in_quotes
+			current_record += '"'
+		elif (c == "\n" or c == "\r") and not in_quotes:
+			if c == "\r" and i + 1 < csv_text.length() and csv_text[i + 1] == "\n":
+				i += 1
+			if not current_record.strip_edges().is_empty():
+				records.append(current_record)
+			current_record = ""
+		else:
+			current_record += c
+		i += 1
+
+	if not current_record.strip_edges().is_empty():
+		records.append(current_record)
+
+	return records
+
+
+## Normalisasi satu baris hasil FileAccess.get_csv_line
+static func normalize_csv_row(row: Array) -> Array:
+	if row.is_empty():
+		return row
+	if row.size() == 1 and str(row[0]).contains(","):
+		var raw_line := str(row[0])
+		if raw_line.begins_with('"') and raw_line.ends_with('"'):
+			raw_line = raw_line.substr(1, raw_line.length() - 2)
+		return parse_csv_line(raw_line)
+	return row
+
+
 ## Parse CSV line dengan handling quote (shared utility)
 static func parse_csv_line(line: String) -> Array:
 	# Cek apakah seluruh baris dibungkus kutip ganda (bad CSV export)
@@ -126,7 +170,7 @@ static func parse_csv_line(line: String) -> Array:
 				return unwrapped_result
 
 		# Jika jumlah kolom normal terlalu sedikit dibanding yang diharapkan
-		if normal_result.size() < 10:  # Asumsi header normal punya >10 kolom
+		if normal_result.size() < 10:
 			var inner = trimmed.substr(1, trimmed.length() - 2)
 			inner = inner.replace('""', '"')
 			var unwrapped_result = _parse_csv_line_internal(inner)

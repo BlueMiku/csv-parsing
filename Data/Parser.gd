@@ -18,6 +18,7 @@ var id_header: String = ""              # Nama header untuk ID
 var skip_empty_groups: bool = true
 var default_group_name: String = "Uncategorized"
 var skip_non_numeric_id: bool = false   # Skip baris dengan ID non-numeric
+var skip_duplicate_id: bool = false     # Skip baris jika ID sudah ada (keep yang pertama)
 
 # Metadata configuration (header-based)
 var metadata_header: String = ""        # Nama header untuk deteksi metadata type
@@ -167,6 +168,11 @@ func configure_for_game_settings() -> CSVParser:
 	_apply_config(config)
 	return self
 
+func configure_for_blip() -> CSVParser:
+	var config = DataSchemas.get_blip_config()
+	_apply_config(config)
+	return self
+
 ## Helper function untuk apply config dengan default values
 func _apply_config(config: Dictionary) -> void:
 	schema = config.get("schema", {})
@@ -178,74 +184,91 @@ func _apply_config(config: Dictionary) -> void:
 	metadata_value_header = config.get("metadata_value_header", "").to_lower()
 	supported_metadata_types = config.get("supported_metadata_types", [])
 	skip_non_numeric_id = config.get("skip_non_numeric_id", false)
+	skip_duplicate_id = config.get("skip_duplicate_id", false)
 
 
 ## Fungsi untuk parsing CSV file
 func parse_csv_from_path(file_path: String) -> bool:
 	_clear_data()
-	
+
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
 		var msg = "Gagal membuka file CSV: " + file_path
 		push_error(msg)
 		parsing_errors.append(msg)
 		return false
-	
-	var csv_text = file.get_as_text()
+
+	var rows := _read_csv_rows_from_file(file)
 	file.close()
-	
-	return parse_csv_text(csv_text)
+	return _parse_csv_rows(rows)
+
 
 ## Fungsi untuk parsing CSV text
 func parse_csv_text(csv_text: String) -> bool:
-	var lines = csv_text.split("\n")
-	
-	# Validasi schema sudah di-set
+	_clear_data()
+	var rows: Array = []
+	for record in JsonUtils.split_csv_records(csv_text):
+		var line := str(record).strip_edges()
+		if line.is_empty():
+			continue
+		rows.append(parse_csv_line(line))
+	return _parse_csv_rows(rows)
+
+
+## Baca semua record CSV dari file (menghormati field multiline berkutip)
+func _read_csv_rows_from_file(file: FileAccess) -> Array:
+	var rows: Array = []
+	while not file.eof_reached():
+		var row: Array = file.get_csv_line()
+		if row.is_empty():
+			continue
+		if row.size() == 1 and str(row[0]).strip_edges().is_empty():
+			continue
+		rows.append(JsonUtils.normalize_csv_row(row))
+	return rows
+
+
+## Proses baris CSV yang sudah dipecah menjadi array field
+func _parse_csv_rows(rows: Array) -> bool:
 	if schema.is_empty():
 		var msg = "Schema tidak ditemukan. Pastikan tipe CSV sudah dikonfigurasi dengan benar."
 		push_warning(msg)
 		parsing_errors.append(msg)
 		return false
-	
-	# Validasi file memiliki cukup baris untuk header
-	if lines.size() <= header_row:
-		var msg = "File CSV tidak memiliki cukup baris. Header row: %d, total baris: %d" % [header_row, lines.size()]
+
+	if rows.size() <= header_row:
+		var msg = "File CSV tidak memiliki cukup baris. Header row: %d, total baris: %d" % [header_row, rows.size()]
 		push_warning(msg)
 		parsing_errors.append(msg)
 		return false
-	
-	# Parse header row untuk membuat _header_map
-	var header_line = lines[header_row].strip_edges()
-	if not _build_header_map(header_line):
+
+	if not _build_header_map_from_row(rows[header_row]):
 		return false
-	
-	# Validasi semua header yang dibutuhkan schema ada dalam CSV
+
 	_validate_schema_headers()
-	
-	# Parse data rows
-	for i in range(start_row, lines.size()):
-		var line = lines[i].strip_edges()
-		if line.is_empty():
-			continue
-		
-		var row = parse_csv_line(line)
-		
-		# Cek apakah baris ini metadata
+
+	for i in range(start_row, rows.size()):
+		var row: Array = rows[i]
+
 		if _is_metadata_row(row):
 			_store_metadata(row)
 			continue
-		
-		# Skip baris dengan ID non-numeric jika config aktif
+
+		# Skip if ID column is empty
+		if not id_header.is_empty() and _header_map.has(id_header):
+			var id_col = _header_map[id_header]
+			if id_col >= 0 and id_col < row.size() and row[id_col].strip_edges().is_empty():
+				continue
+
 		if skip_non_numeric_id and _should_skip_non_numeric_row(row):
 			continue
-		
+
 		var row_data = _process_row(row, i + 1)
 		if row_data.is_empty():
 			continue
-		
-		# Memasukkan data ke penyimpanan
+
 		_store_row_data(row, row_data)
-	
+
 	_update_available_groups()
 	return true
 
@@ -273,22 +296,26 @@ func _should_skip_non_numeric_row(row: Array) -> bool:
 	return false
 
 
-## Build header map dari baris header CSV
+## Build header map dari baris header CSV (string mentah)
 func _build_header_map(header_line: String) -> bool:
+	return _build_header_map_from_row(parse_csv_line(header_line))
+
+
+## Build header map dari array field header
+func _build_header_map_from_row(headers: Array) -> bool:
 	_header_map.clear()
-	var headers = parse_csv_line(header_line)
-	
+
 	if headers.is_empty():
 		var msg = "Header CSV kosong atau tidak valid."
 		push_warning(msg)
 		parsing_errors.append(msg)
 		return false
-	
+
 	for i in range(headers.size()):
-		var header_name = headers[i].strip_edges().to_lower()
+		var header_name = str(headers[i]).strip_edges().to_lower()
 		if not header_name.is_empty():
 			_header_map[header_name] = i
-	
+
 	return true
 
 ## Validasi semua header yang dibutuhkan schema ada dalam CSV
@@ -532,12 +559,19 @@ func _store_row_data(row: Array, row_data: Dictionary) -> void:
 			
 			if not _data_rows.has(group_key):
 				_data_rows[group_key] = {}
+			
+			if skip_duplicate_id and _data_rows[group_key].has(row_id):
+				return
+				
 			_data_rows[group_key][row_id] = row_data
 			
 			# Update warning_details dengan group info untuk row ini
 			_update_warning_details_with_group(row_id, group_key)
 			return
 	
+	if skip_duplicate_id and _data_rows.has(row_id):
+		return
+		
 	# Tidak ada grouping, simpan langsung
 	_data_rows[row_id] = row_data
 

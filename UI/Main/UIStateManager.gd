@@ -1,4 +1,4 @@
-﻿class_name UIStateManager
+class_name UIStateManager
 extends RefCounted
 
 ## Mengelola status updates dan UI state
@@ -43,13 +43,18 @@ func show_processing(message: String = "Memproses CSV...") -> void:
 
 
 func show_success(message: String) -> void:
-	_set_colors_status(Color.GREEN)
+	_set_colors_status(Color(0.2, 0.85, 0.3))
+	update_status(message)
+
+
+func show_warning(message: String) -> void:
+	_set_colors_status(Color(1.0, 0.65, 0.0))
 	update_status(message)
 
 
 func show_error(message: String) -> void:
-	_set_colors_status(Color.RED)
-	update_status("Error: " + message)
+	_set_colors_status(Color(1.0, 0.25, 0.25))
+	update_status(message)
 
 
 func show_csv_selected() -> void:
