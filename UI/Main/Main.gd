@@ -31,13 +31,16 @@ extends Control
 @onready var sfx_container: PanelContainer = %SFXContainer
 @onready var music_container: PanelContainer = %MusicContainer
 @onready var blips_container: PanelContainer = %BlipsContainer
+@onready var area_trigger_container: PanelContainer = %AreaTriggerContainer
+@onready var area_name_section: HBoxContainer = %AreaNameSection
+@onready var area_name_edit: LineEdit = %AreaNameEdit
 @onready var type_detection_section: VBoxContainer = $Panel/VBoxContainer/TypeDetectionSection
 
 @onready var output_section: HBoxContainer = $Panel/VBoxContainer/OutputSection
 @onready var root_name_section: HBoxContainer = $Panel/VBoxContainer/RootNameSection
 @onready var buttons_container: HBoxContainer = $Panel/VBoxContainer/ButtonsContainer
 
-enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP }
+enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER }
 
 # Managers
 var _type_indicator_manager: FileTypeIndicatorManager
@@ -108,7 +111,8 @@ func _create_type_indicator_manager() -> FileTypeIndicatorManager:
 		"game_settings": game_settings_container,
 		"sfx": sfx_container,
 		"music": music_container,
-		"blips": blips_container
+		"blips": blips_container,
+		"area_trigger": area_trigger_container
 	}
 	var manager = FileTypeIndicatorManager.new(containers, type_detection_section)
 	manager.init_indicators()
@@ -176,7 +180,7 @@ func _on_file_selected(path: String) -> void:
 	var validation = _validator.validate_file(path, detected_type, _patron_loader)
 	if not validation.valid:
 		_ui_state_manager.show_error(validation.message)
-		_show_errors(validation.errors)
+		_show_errors(validation.get("errors", []))
 		_type_indicator_manager.reset()
 		_selected_file_type = FileType.NONE
 		return
@@ -192,6 +196,19 @@ func _on_file_selected(path: String) -> void:
 		FileType.NPC_PROPERTIES:
 			_current_csv_type = CSVConfig.CSVType.NPC_PROPERTIES
 			_ui_state_manager.show_file_type_selected("NPC Properties")
+		FileType.AREA_TRIGGER:
+			_current_csv_type = CSVConfig.CSVType.AREA_TRIGGER
+			_ui_state_manager.show_file_type_selected("Area Trigger")
+			# Auto-extract area name dari nama file (strip prefix seperti "(DEMO) " dan suffix duplikat)
+			var raw := path.get_file().get_basename()
+			var bracket_end := raw.rfind(") ")
+			if bracket_end != -1:
+				raw = raw.substr(bracket_end + 2)
+			var trail := raw.find("(")
+			if trail != -1:
+				raw = raw.substr(0, trail).strip_edges()
+			if not raw.is_empty():
+				area_name_edit.text = raw
 		_:
 			_load_chapters(path)
 
@@ -305,6 +322,12 @@ func _on_generate_pressed() -> void:
 			_csv_processor.process_patron_csv(csv_path, output_path)
 		FileType.NPC_PROPERTIES:
 			_csv_processor.process_npc_properties_csv(csv_path, output_path)
+		FileType.AREA_TRIGGER:
+			var area_name := area_name_edit.text.strip_edges()
+			if area_name.is_empty():
+				_ui_state_manager.show_error("Area Name tidak boleh kosong!")
+				return
+			_csv_processor.process_area_trigger_csv(csv_path, output_path, area_name)
 		FileType.ITEMS:
 			_current_csv_type = CSVConfig.detect_type(csv_path)
 			if not _is_item_type(_current_csv_type):
@@ -445,10 +468,15 @@ func _update_sections_visibility() -> void:
 		FileType.BLIP:
 			output_section.visible = true
 			buttons_container.visible = true
+		FileType.AREA_TRIGGER:
+			output_section.visible = true
+			area_name_section.visible = true
+			buttons_container.visible = true
 
 func _hide_all_sections() -> void:
 	output_section.visible = false
 	root_name_section.visible = false
+	area_name_section.visible = false
 	buttons_container.visible = false
 	chapter_filter_container.visible = false
 	patron_selection_container.visible = false

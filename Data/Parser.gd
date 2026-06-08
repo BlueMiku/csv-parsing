@@ -202,7 +202,6 @@ func parse_csv_from_path(file_path: String) -> bool:
 	file.close()
 	return _parse_csv_rows(rows)
 
-
 ## Fungsi untuk parsing CSV text
 func parse_csv_text(csv_text: String) -> bool:
 	_clear_data()

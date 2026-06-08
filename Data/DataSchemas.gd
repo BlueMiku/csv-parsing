@@ -486,3 +486,10 @@ static func get_patron_files_config() -> Dictionary:
 			"required_headers": ["idletalkreqs", "character_name", "chapter_name"]
 		}
 	}
+
+## AreaTriggerStories header patterns untuk deteksi otomatis
+static func get_area_trigger_header_patterns() -> Array:
+	return [["day", "priority", "expired_on", "start_at", "no_travel", "autocontent"]]
+
+static func get_area_trigger_required_headers() -> Array:
+	return ["day", "priority", "expired_on", "no_travel"]

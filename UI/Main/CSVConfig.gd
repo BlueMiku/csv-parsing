@@ -1,4 +1,4 @@
-﻿class_name CSVConfig
+class_name CSVConfig
 extends RefCounted
 
 ## Skrip untuk menentukan tipe CSV dan konfigurasi parser dan generator
@@ -16,6 +16,7 @@ enum CSVType {
 	SFX,
 	MUSIC,
 	BLIP,
+	AREA_TRIGGER,
 	UNKNOWN
 }
 
@@ -115,6 +116,14 @@ const TYPE_CONFIGS: Dictionary = {
 		"root_name": "",
 		"header_patterns": [["character_nick", "text_blip"]],
 		"required_headers": ["character_nick", "text_blip"]
+	},
+	CSVType.AREA_TRIGGER: {
+		"name": "area_trigger_stories",
+		"group_label": "rows",
+		"root_name": "",
+		"header_patterns": [["day", "priority", "expired_on", "start_at", "no_travel", "autocontent"]],
+		"required_headers": ["day", "priority", "expired_on", "no_travel"],
+		"is_custom_processor": true
 	},
 	CSVType.UNKNOWN: {
 		"name": "unknown",
@@ -270,6 +279,8 @@ static func configure_parser(parser: Node, csv_type: CSVType) -> void:
 			parser.configure_for_game_settings()
 		CSVType.BLIP:
 			parser.configure_for_blip()
+		CSVType.AREA_TRIGGER:
+			pass  # Tipe ini menggunakan processor khusus di AreaTriggerProcessor
 
 
 ## Configure generator berdasarkan tipe CSV
@@ -302,6 +313,8 @@ static func configure_generator(generator: Node, csv_type: CSVType) -> void:
 			generator.configure_for_game_settings()
 		CSVType.BLIP:
 			generator.configure_for_blip()
+		CSVType.AREA_TRIGGER:
+			pass  # Tipe ini menggunakan processor khusus di AreaTriggerProcessor
 
 
 ## Konfigurasi parser dan generator secara bersamaan

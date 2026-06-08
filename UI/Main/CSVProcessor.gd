@@ -1,4 +1,4 @@
-﻿class_name CSVProcessor
+class_name CSVProcessor
 extends RefCounted
 
 ## Menangani semua logika processing CSV (single, batch merge, patron, NPC properties)
@@ -316,3 +316,44 @@ func process_npc_properties_csv(csv_path: String, output_path: String) -> void:
 	processing_completed.emit(true, "Berhasil! %d warna dan %d outfit types diekspor ke: %s" % [colors_count, outfit_count, output_path])
 	
 	print("[CSVProcessor] NPC Properties JSON saved to: ", output_path)
+
+
+## Process AREA_TRIGGER type CSV
+func process_area_trigger_csv(csv_path: String, output_path: String, area_name: String) -> void:
+	if area_name.strip_edges().is_empty():
+		processing_error.emit(["Area Name tidak boleh kosong. Isi nama area sebelum generate."])
+		return
+
+	processing_started.emit("Memproses Area Trigger: " + area_name + "...")
+
+	var processor := AreaTriggerProcessor.new()
+	var result := processor.process_to_file(csv_path, area_name.strip_edges(), output_path)
+
+	if not result.get("success", false):
+		var errors: Array = result.get("errors", [])
+		if errors.is_empty():
+			processing_error.emit(["Gagal memproses file Area Trigger"])
+		else:
+			processing_error.emit(errors)
+		return
+
+	var rows_count: int = result.get("rows_count", 0)
+	var skipped: int = result.get("skipped_count", 0)
+	var merge_note: String = result.get("merge_note", "")
+	var skip_note := (" (%d baris non-data di-skip)" % skipped) if skipped > 0 else ""
+	var status_msg := "Berhasil! %d baris diekspor%s%s → %s" % [rows_count, skip_note, merge_note, output_path]
+
+	var proc_errors: Array = result.get("errors", [])
+	if proc_errors.size() > 0:
+		processing_warning.emit(
+			proc_errors,
+			output_path,
+			[] as Array[String],
+			[] as Array[Dictionary],
+			"",
+			false
+		)
+	else:
+		processing_completed.emit(true, status_msg)
+
+	print("[CSVProcessor] Area Trigger JSON saved to: ", output_path)
