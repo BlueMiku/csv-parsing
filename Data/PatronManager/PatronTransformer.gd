@@ -10,8 +10,8 @@ static func generate_character_json(data: Dictionary) -> Dictionary:
 	var orders_data: Array = data.get("orders_data", [])
 	var idletalk_data: Array = data.get("idletalk_data", [])
 	
-	var spawn_req: String = str(patron_info.get("required_story_id_to_spawn", ""))
-	var stop_req: String = str(patron_info.get("required_story_id_to_stop",""))
+	var spawn_req: Array = _parse_array_field(str(patron_info.get("required_story_id_to_spawn", "")))
+	var stop_req: Array = _parse_array_field(str(patron_info.get("required_story_id_to_stop","")))
 	var json_output: Dictionary = {}
 
 	json_output["character_name"] = character_name
@@ -27,7 +27,7 @@ static func generate_character_json(data: Dictionary) -> Dictionary:
 	json_output["gender"] = _parse_array_field(str(patron_info.get("gender", "")))
 	json_output["text_blip"] = str(patron_info.get("text_blip", ""))
 	json_output["days_spawnable"] = _parse_days_array(str(patron_info.get("day_spawnable", "")))
-	json_output["required_story_id_to_name"] = str(patron_info.get("required_story_id_to_name", ""))
+	json_output["required_story_id_to_name"] = _parse_array_field(str(patron_info.get("required_story_id_to_name", "")))
 	
 	json_output["required_story_id_to_spawn"] = spawn_req
 	json_output["required_story_id_to_stop"] = stop_req

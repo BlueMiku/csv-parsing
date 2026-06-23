@@ -703,4 +703,3 @@ func _process_setting(setting: Variant, prefix_map: Dictionary, grouped: Diction
 			return
 	# No match
 	pass
-
