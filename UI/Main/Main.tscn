@@ -194,6 +194,42 @@ text = "Area Trigger"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="GameEventsContainer" type="PanelContainer" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="GameEventsLabel" type="Label" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons/GameEventsContainer"]
+layout_mode = 2
+text = "Game Events"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CutsceneTriggerContainer" type="PanelContainer" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CutsceneTriggerLabel" type="Label" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons/CutsceneTriggerContainer"]
+layout_mode = 2
+text = "Cutscene Trigger"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ShopSetsContainer" type="PanelContainer" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShopSetsLabel" type="Label" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons/ShopSetsContainer"]
+layout_mode = 2
+text = "Shop Sets"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="OutputSection" type="HBoxContainer" parent="Panel/VBoxContainer"]
 layout_mode = 2
 

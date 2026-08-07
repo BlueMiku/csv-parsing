@@ -17,6 +17,9 @@ enum CSVType {
 	MUSIC,
 	BLIP,
 	AREA_TRIGGER,
+	GAME_EVENTS,
+	CUTSCENE_TRIGGERS,
+	SHOP_SETS,
 	UNKNOWN
 }
 
@@ -125,6 +128,30 @@ const TYPE_CONFIGS: Dictionary = {
 		"required_headers": ["day", "priority", "expired_on", "no_travel"],
 		"is_custom_processor": true
 	},
+	CSVType.GAME_EVENTS: {
+		"name": "game_events",
+		"group_label": "events",
+		"root_name": "",
+		"header_patterns": [["eventname", "start_at", "single_day", "settings_name", "operation"]],
+		"required_headers": ["eventname", "start_at", "settings_name", "operation", "value"],
+		"is_custom_processor": true
+	},
+	CSVType.CUTSCENE_TRIGGERS: {
+		"name": "cutscene_triggers",
+		"group_label": "triggers",
+		"root_name": "",
+		"header_patterns": [["chapter_to_trigger", "start_at_delay"]],
+		"required_headers": ["chapter_to_trigger"],
+		"is_custom_processor": true
+	},
+	CSVType.SHOP_SETS: {
+		"name": "shop_sets",
+		"group_label": "sets",
+		"root_name": "",
+		"header_patterns": [["set_shop_name", "product_category", "transaction_type"]],
+		"required_headers": ["set_shop_name", "product_category"],
+		"is_custom_processor": true
+	},
 	CSVType.UNKNOWN: {
 		"name": "unknown",
 		"group_label": "items",
@@ -176,6 +203,26 @@ static func get_detection_error(csv_path: String) -> String:
 static func _detect_from_header(header: String, suppress_warning: bool = false) -> CSVType:
 	header = header.to_lower()
 	
+	# Check GAME_EVENTS type first (GameplayEvents.csv)
+	for pattern in TYPE_CONFIGS[CSVType.GAME_EVENTS]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.GAME_EVENTS
+
+	# Check AREA_TRIGGER (AreaTriggerStories.csv)
+	for pattern in TYPE_CONFIGS[CSVType.AREA_TRIGGER]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.AREA_TRIGGER
+
+	# Check CUTSCENE_TRIGGERS (CutsceneTriggerReqs.csv)
+	for pattern in TYPE_CONFIGS[CSVType.CUTSCENE_TRIGGERS]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.CUTSCENE_TRIGGERS
+
+	# Check SHOP_SETS (ShopSet.csv)
+	for pattern in TYPE_CONFIGS[CSVType.SHOP_SETS]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.SHOP_SETS
+
 	# Check GAME_SETTINGS type first (GameSettings.csv)
 	for pattern in TYPE_CONFIGS[CSVType.GAME_SETTINGS]["header_patterns"]:
 		if _matches_pattern(header, pattern):
@@ -281,6 +328,8 @@ static func configure_parser(parser: Node, csv_type: CSVType) -> void:
 			parser.configure_for_blip()
 		CSVType.AREA_TRIGGER:
 			pass  # Tipe ini menggunakan processor khusus di AreaTriggerProcessor
+		CSVType.GAME_EVENTS:
+			pass  # Tipe ini menggunakan processor khusus di GameplayEventsProcessor
 
 
 ## Configure generator berdasarkan tipe CSV
@@ -315,6 +364,8 @@ static func configure_generator(generator: Node, csv_type: CSVType) -> void:
 			generator.configure_for_blip()
 		CSVType.AREA_TRIGGER:
 			pass  # Tipe ini menggunakan processor khusus di AreaTriggerProcessor
+		CSVType.GAME_EVENTS:
+			pass  # Tipe ini menggunakan processor khusus di GameplayEventsProcessor
 
 
 ## Konfigurasi parser dan generator secara bersamaan

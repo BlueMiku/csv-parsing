@@ -2,33 +2,19 @@ class_name AreaTriggerProcessor
 extends RefCounted
 
 ## Processor khusus untuk AreaTriggerStories CSV
-## Format CSV: data spawn NPC dan Object di area trigger berdasarkan hari
-
-# Column index groups: [scene_col, lv_col, content_col]
-const NPC_SLOT_COLS := {
-	"1": [9,  10, 11],
-	"2": [12, 13, 14],
-	"3": [15, 16, 17],
-	"4": [18, 19, 20],
-	"5": [21, 22, 23],
-	"6": [24, 25, 26],
-}
-
-const OBJECT_SLOT_COLS := {
-	"A": [27, 28, 29],
-	"B": [30, 31, 32],
-	"C": [33, 34, 35],
-	"D": [36, 37, 38],
-	"E": [39, 40, 41],
-}
-
-const MIN_COLS := 42
+## Mendukung dua format:
+##   v1 (legacy)  : Day di col 0, tidak ada item_story
+##   v2           : Day di col 0, ada kolom item_story setelah item_requirement
+##   +Keterangan  : kolom Keterangan di col 0, Day bergeser ke col 1
 
 var _errors: Array[String] = []
 
+# Format flags — di-set saat process() membaca header
+var _k: int = 0   # 1 jika ada kolom Keterangan di col 0
+var _o: int = 0   # 1 jika ada kolom item_story
 
-## Proses file CSV dan kembalikan JSON string dengan area_name sebagai root key
-## Mengembalikan Dictionary {success, json_string, rows_count, skipped_count, errors}
+
+## Proses file CSV dan kembalikan Dictionary {success, json_string, rows, rows_count, skipped_count, errors}
 func process(csv_path: String, area_name: String) -> Dictionary:
 	_errors.clear()
 
@@ -39,7 +25,6 @@ func process(csv_path: String, area_name: String) -> Dictionary:
 	if file == null:
 		return _fail("Gagal membuka file CSV: " + csv_path)
 
-	# Baca semua baris
 	var raw_lines: Array[String] = []
 	while not file.eof_reached():
 		var line := file.get_line().strip_edges()
@@ -50,18 +35,24 @@ func process(csv_path: String, area_name: String) -> Dictionary:
 	if raw_lines.size() < 2:
 		return _fail("CSV tidak memiliki cukup baris (hanya %d baris)." % raw_lines.size())
 
-	# Skip header (index 0), proses baris data
+	# Deteksi format dari header
+	var header_cols := _parse_csv_line(raw_lines[0])
+	_k = 1 if (header_cols.size() > 0 and header_cols[0].strip_edges().to_lower() == "keterangan") else 0
+	_o = 0
+	for col in header_cols:
+		if col.strip_edges().to_lower() == "item_story":
+			_o = 1
+			break
+
 	var rows: Array = []
 	var skipped := 0
 	for i in range(1, raw_lines.size()):
 		var cols := _parse_csv_line(raw_lines[i])
-		# Skip baris yang kolom Day-nya bukan integer valid (baris komentar/catatan)
-		if cols.is_empty() or not cols[0].strip_edges().is_valid_int():
+		if cols.is_empty() or not cols[_k].strip_edges().is_valid_int():
 			skipped += 1
 			continue
 		rows.append(_parse_row(cols))
 
-	# Build JSON string (single-area, untuk preview)
 	var json_str := _build_json(area_name, rows)
 
 	return {
@@ -74,8 +65,7 @@ func process(csv_path: String, area_name: String) -> Dictionary:
 	}
 
 
-## Proses dan langsung simpan ke file output.
-## Jika file output sudah ada, data area baru akan di-merge ke dalamnya.
+## Proses dan langsung simpan ke file output, merge jika sudah ada
 func process_to_file(csv_path: String, area_name: String, output_path: String) -> Dictionary:
 	var parse_result := process(csv_path, area_name)
 	if not parse_result.get("success", false):
@@ -83,7 +73,6 @@ func process_to_file(csv_path: String, area_name: String, output_path: String) -
 
 	var rows: Array = parse_result.get("rows", [])
 
-	# Merge into existing JSON jika file sudah ada
 	var result_dict: Dictionary = {}
 	var merge_note := ""
 	if FileAccess.file_exists(output_path):
@@ -100,8 +89,6 @@ func process_to_file(csv_path: String, area_name: String, output_path: String) -
 			existing_file.close()
 
 	result_dict[area_name] = rows
-
-	# Build JSON dari result gabungan (bisa berisi lebih dari 1 area)
 	var json_str := _build_json_multi(result_dict)
 
 	var out_file := FileAccess.open(output_path, FileAccess.WRITE)
@@ -122,29 +109,41 @@ func process_to_file(csv_path: String, area_name: String, output_path: String) -
 	}
 
 
-## GET error messages
 func get_errors() -> Array[String]:
 	return _errors
 
 
 func _parse_row(cols: Array) -> Dictionary:
-	# Pastikan cukup kolom
-	while cols.size() < MIN_COLS:
+	var k := _k
+	var o := _o
+
+	while cols.size() < k + 43 + o:
 		cols.append("")
 
 	var row := {}
-	row["day"]               = int(cols[0].strip_edges())
-	row["priority"]          = int(cols[1].strip_edges()) if cols[1].strip_edges().is_valid_int() else 0
-	row["expired_on"]        = _str_or_null(cols[2])
-	row["start_at"]          = _str_or_null(cols[3])
-	row["item_requirement"]  = _parse_item_req(cols[4])
-	row["no_travel"]         = cols[5].strip_edges().to_lower() == "true"
-	row["no_travel_message"] = _str_or_null(cols[6])
+	row["day"]               = int(cols[k + 0].strip_edges())
+	row["priority"]          = int(cols[k + 1].strip_edges()) if cols[k + 1].strip_edges().is_valid_int() else 0
+	row["expired_on"]        = _str_or_null(cols[k + 2])
+	row["start_at"]          = _str_or_null(cols[k + 3])
+	row["item_requirement"]  = _parse_item_req(cols[k + 4])
 
-	# auto_content (col 7 = chapter name, col 8 = level requirement)
-	var auto_ch: Variant = _str_or_null(cols[7])
+	# item_story (v2 only)
+	var item_story := false
+	if o == 1:
+		item_story = cols[k + 5].strip_edges().to_lower() == "true"
+	row["item_story"] = item_story
+
+	var no_travel: bool = cols[k + 5 + o].strip_edges().to_lower() == "true"
+	row["no_travel"]         = no_travel
+	row["no_travel_message"] = _str_or_null(cols[k + 6 + o])
+
+	if item_story and no_travel:
+		_errors.append("Hari %d: item_story dan no_travel keduanya TRUE — hanya satu yang boleh aktif." % row["day"])
+
+	# auto_content (col k+7+o = chapter, k+8+o = level)
+	var auto_ch: Variant = _str_or_null(cols[k + 7 + o])
 	if auto_ch != null:
-		var lv_s: String = cols[8].strip_edges()
+		var lv_s: String = cols[k + 8 + o].strip_edges()
 		row["auto_content"] = {
 			"chapter":        auto_ch,
 			"level_required": int(lv_s) if lv_s.is_valid_int() else -1
@@ -152,31 +151,31 @@ func _parse_row(cols: Array) -> Dictionary:
 	else:
 		row["auto_content"] = null
 
-	# NPC slots (scene / level_required / content)
+	# NPC slots — base k+9+o, 3 kolom tiap slot
 	var npc_slots := {}
-	for slot_key in NPC_SLOT_COLS:
-		var idx: Array = NPC_SLOT_COLS[slot_key]
-		var scene:   Variant = _str_or_null(cols[idx[0]])
-		var lv_s:    String  = cols[idx[1]].strip_edges()
-		var content: Variant = _str_or_null(cols[idx[2]])
+	for n in range(1, 7):
+		var base := k + 9 + o + (n - 1) * 3
+		var scene:   Variant = _str_or_null(cols[base])
+		var lv_s:    String  = cols[base + 1].strip_edges()
+		var content: Variant = _str_or_null(cols[base + 2])
 		if scene != null or content != null:
-			npc_slots[slot_key] = {
+			npc_slots[str(n)] = {
 				"scene":          scene,
 				"level_required": int(lv_s) if lv_s.is_valid_int() else -1,
 				"content":        content
 			}
 	row["npc_slots"] = npc_slots
 
-	# Object slots (scene / level_required / content)
-	# scene boleh kosong (posisi ditentukan oleh background), tapi tetap ditulis jika ada data
+	# Object slots — base k+27+o, 3 kolom tiap slot
 	var object_slots := {}
-	for slot_key in OBJECT_SLOT_COLS:
-		var idx: Array = OBJECT_SLOT_COLS[slot_key]
-		var scene:   Variant = _str_or_null(cols[idx[0]])
-		var lv_s:    String  = cols[idx[1]].strip_edges()
-		var content: Variant = _str_or_null(cols[idx[2]])
+	var obj_keys := ["A", "B", "C", "D", "E"]
+	for n in range(obj_keys.size()):
+		var base    := k + 27 + o + n * 3
+		var scene:   Variant = _str_or_null(cols[base])
+		var lv_s:    String  = cols[base + 1].strip_edges()
+		var content: Variant = _str_or_null(cols[base + 2])
 		if lv_s != "" or content != null:
-			object_slots[slot_key] = {
+			object_slots[obj_keys[n]] = {
 				"scene":          scene,
 				"level_required": int(lv_s) if lv_s.is_valid_int() else -1,
 				"content":        content
@@ -186,7 +185,6 @@ func _parse_row(cols: Array) -> Dictionary:
 	return row
 
 
-## Parse field item_requirement: "type,id,qty" → dict, atau null jika kosong
 func _parse_item_req(s: String):
 	var t := s.strip_edges()
 	if t.is_empty():
@@ -202,7 +200,6 @@ func _parse_item_req(s: String):
 	}
 
 
-## Parser CSV line sederhana dengan dukungan quoted fields
 func _parse_csv_line(line: String) -> Array:
 	var result := []
 	var current := ""
@@ -211,7 +208,6 @@ func _parse_csv_line(line: String) -> Array:
 	while i < line.length():
 		var c := line[i]
 		if c == '"':
-			# "" di dalam quoted field → literal quote
 			if in_quotes and i + 1 < line.length() and line[i + 1] == '"':
 				current += '"'
 				i += 2
@@ -227,18 +223,15 @@ func _parse_csv_line(line: String) -> Array:
 	return result
 
 
-## String atau null jika kosong
 func _str_or_null(s: String):
 	var t := s.strip_edges()
 	return t if not t.is_empty() else null
 
 
-## Build JSON single-area: { "area_name": [ ...rows... ] }
 func _build_json(area_name: String, rows: Array) -> String:
 	return _build_json_multi({area_name: rows})
 
 
-## Build JSON multi-area: { "area1": [...], "area2": [...], ... }
 func _build_json_multi(areas: Dictionary) -> String:
 	var lines: PackedStringArray = []
 	lines.append("{")
@@ -258,7 +251,6 @@ func _build_json_multi(areas: Dictionary) -> String:
 	return "\n".join(lines)
 
 
-## Stringify rows menjadi array lines dengan indentasi 2 level
 func _stringify_area_rows(rows: Array) -> PackedStringArray:
 	var lines: PackedStringArray = []
 	var key_order := [
@@ -266,6 +258,7 @@ func _stringify_area_rows(rows: Array) -> PackedStringArray:
 		"day",
 		"expired_on",
 		"item_requirement",
+		"item_story",
 		"no_travel",
 		"no_travel_message",
 		"npc_slots",
@@ -292,7 +285,6 @@ func _stringify_area_rows(rows: Array) -> PackedStringArray:
 	return lines
 
 
-## Cek apakah ada key valid setelah index ini, return "," atau ""
 func _has_next_key(row: Dictionary, key_order: Array, current_idx: int) -> String:
 	for i in range(current_idx + 1, key_order.size()):
 		if row.has(key_order[i]):
@@ -300,7 +292,6 @@ func _has_next_key(row: Dictionary, key_order: Array, current_idx: int) -> Strin
 	return ""
 
 
-## Konversi nilai GDScript ke JSON string
 func _val_to_json(val, indent_level: int) -> String:
 	if val == null:
 		return "null"
@@ -348,6 +339,7 @@ func _escape(s: String) -> String:
 	s = s.replace("\r", "\\r")
 	s = s.replace("\t", "\\t")
 	return s
+
 
 func _fail(msg: String) -> Dictionary:
 	_errors.append(msg)

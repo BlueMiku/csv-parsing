@@ -629,6 +629,7 @@ func generate_game_settings_json(data: Dictionary) -> String:
 	# Prefix mapping: settings_name prefix -> group name
 	var prefix_map = {
 		"globals_": "Globals",
+		"player_": "Player",
 		"patron_": "Patron",
 		"gameplay_": "Gameplay"
 	}

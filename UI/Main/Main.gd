@@ -34,13 +34,16 @@ extends Control
 @onready var area_trigger_container: PanelContainer = %AreaTriggerContainer
 @onready var area_name_section: HBoxContainer = %AreaNameSection
 @onready var area_name_edit: LineEdit = %AreaNameEdit
+@onready var game_events_container: PanelContainer = %GameEventsContainer
+@onready var cutscene_trigger_container: PanelContainer = %CutsceneTriggerContainer
+@onready var shop_sets_container: PanelContainer = %ShopSetsContainer
 @onready var type_detection_section: VBoxContainer = $Panel/VBoxContainer/TypeDetectionSection
 
 @onready var output_section: HBoxContainer = $Panel/VBoxContainer/OutputSection
 @onready var root_name_section: HBoxContainer = $Panel/VBoxContainer/RootNameSection
 @onready var buttons_container: HBoxContainer = $Panel/VBoxContainer/ButtonsContainer
 
-enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER }
+enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS }
 
 # Managers
 var _type_indicator_manager: FileTypeIndicatorManager
@@ -112,7 +115,10 @@ func _create_type_indicator_manager() -> FileTypeIndicatorManager:
 		"sfx": sfx_container,
 		"music": music_container,
 		"blips": blips_container,
-		"area_trigger": area_trigger_container
+		"area_trigger": area_trigger_container,
+		"game_events": game_events_container,
+		"cutscene_triggers": cutscene_trigger_container,
+		"shop_sets": shop_sets_container
 	}
 	var manager = FileTypeIndicatorManager.new(containers, type_detection_section)
 	manager.init_indicators()
@@ -209,6 +215,15 @@ func _on_file_selected(path: String) -> void:
 				raw = raw.substr(0, trail).strip_edges()
 			if not raw.is_empty():
 				area_name_edit.text = raw
+		FileType.GAME_EVENTS:
+			_current_csv_type = CSVConfig.CSVType.GAME_EVENTS
+			_ui_state_manager.show_file_type_selected("Gameplay Events")
+		FileType.CUTSCENE_TRIGGERS:
+			_current_csv_type = CSVConfig.CSVType.CUTSCENE_TRIGGERS
+			_ui_state_manager.show_file_type_selected("Cutscene Triggers")
+		FileType.SHOP_SETS:
+			_current_csv_type = CSVConfig.CSVType.SHOP_SETS
+			_ui_state_manager.show_file_type_selected("Shop Sets")
 		_:
 			_load_chapters(path)
 
@@ -328,6 +343,12 @@ func _on_generate_pressed() -> void:
 				_ui_state_manager.show_error("Area Name tidak boleh kosong!")
 				return
 			_csv_processor.process_area_trigger_csv(csv_path, output_path, area_name)
+		FileType.GAME_EVENTS:
+			_csv_processor.process_game_events_csv(csv_path, output_path)
+		FileType.CUTSCENE_TRIGGERS:
+			_csv_processor.process_cutscene_trigger_csv(csv_path, output_path)
+		FileType.SHOP_SETS:
+			_csv_processor.process_shop_sets_csv(csv_path, output_path)
 		FileType.ITEMS:
 			_current_csv_type = CSVConfig.detect_type(csv_path)
 			if not _is_item_type(_current_csv_type):
@@ -471,6 +492,15 @@ func _update_sections_visibility() -> void:
 		FileType.AREA_TRIGGER:
 			output_section.visible = true
 			area_name_section.visible = true
+			buttons_container.visible = true
+		FileType.GAME_EVENTS:
+			output_section.visible = true
+			buttons_container.visible = true
+		FileType.CUTSCENE_TRIGGERS:
+			output_section.visible = true
+			buttons_container.visible = true
+		FileType.SHOP_SETS:
+			output_section.visible = true
 			buttons_container.visible = true
 
 func _hide_all_sections() -> void:

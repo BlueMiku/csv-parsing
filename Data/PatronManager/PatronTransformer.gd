@@ -19,7 +19,7 @@ static func generate_character_json(data: Dictionary) -> Dictionary:
 	json_output["character_nick"] = str(patron_info.get("character_nick", ""))
 	json_output["character_full"] = str(patron_info.get("character_full", ""))
 	json_output["patron_wealth"] = str(patron_info.get("patron_wealth", "Low"))
-	json_output["partner_name"] = _parse_array_field(str(patron_info.get("partner_name", "")))
+	json_output["partner_name"] = _build_partner_name(patron_info)
 	json_output["is_spawnable"] = _parse_bool(str(patron_info.get("is_spawnable", "TRUE")))
 	json_output["is_evening_spawnable"] = _parse_bool(str(patron_info.get("is_evening_spawnable", "TRUE")))
 	json_output["is_night_spawnable"] = _parse_bool(str(patron_info.get("is_night_spawnable", "TRUE")))
@@ -36,6 +36,13 @@ static func generate_character_json(data: Dictionary) -> Dictionary:
 	json_output["orders"] = _build_orders(orders_data, character_name)
 	
 	return json_output
+
+## partner_name array: [nama_partner, is_partner_left]. is_partner_left hanya ada jika partner_name terisi
+static func _build_partner_name(patron_info: Dictionary) -> Array:
+	var partner_name: Array = _parse_array_field(str(patron_info.get("partner_name", "")))
+	if not partner_name.is_empty():
+		partner_name.append(_parse_bool(str(patron_info.get("is_partner_left", "FALSE"))))
+	return partner_name
 
 static func _parse_array_field(value: String) -> Array:
 	if value.is_empty():
@@ -184,9 +191,13 @@ static func _parse_order_id(value: String) -> Variant:
 
 static func _build_order_traits(entry: Dictionary) -> Array:
 	var traits: Array = []
-	for i in range(1, 4):
-		var trait_key: String = "trait_%d" % i
-		var trait_val: String = str(entry.get(trait_key, ""))
+	var has_trait: bool = false
+	var trait_keys: Array = ["trait_1", "trait_2", "trait_3 (drink)"]
+	for trait_key in trait_keys:
+		var trait_val: String = str(entry.get(trait_key, "")).strip_edges()
 		if not trait_val.is_empty() and trait_val != "-":
-			traits.append(trait_val.strip_edges())
-	return traits
+			traits.append(trait_val)
+			has_trait = true
+		else:
+			traits.append("")
+	return traits if has_trait else []

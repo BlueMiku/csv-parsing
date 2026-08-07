@@ -357,3 +357,89 @@ func process_area_trigger_csv(csv_path: String, output_path: String, area_name: 
 		processing_completed.emit(true, status_msg)
 
 	print("[CSVProcessor] Area Trigger JSON saved to: ", output_path)
+
+
+## Process CUTSCENE_TRIGGERS type CSV
+func process_cutscene_trigger_csv(csv_path: String, output_path: String) -> void:
+	processing_started.emit("Memproses Cutscene Triggers...")
+
+	var processor := CutsceneTriggerProcessor.new()
+	var result := processor.process_to_file(csv_path, output_path)
+
+	if not result.get("success", false):
+		var errors: Array = result.get("errors", [])
+		processing_error.emit(errors if not errors.is_empty() else ["Gagal memproses file Cutscene Triggers"])
+		return
+
+	var rows_count: int = result.get("rows_count", 0)
+	var skipped: int = result.get("skipped_count", 0)
+	var skip_note := (" (%d baris di-skip)" % skipped) if skipped > 0 else ""
+	var status_msg := "Berhasil! %d trigger diekspor%s → %s" % [rows_count, skip_note, output_path]
+
+	var proc_errors: Array = result.get("errors", [])
+	if proc_errors.size() > 0:
+		processing_warning.emit(proc_errors, output_path, [] as Array[String], [] as Array[Dictionary], "", false)
+	else:
+		processing_completed.emit(true, status_msg)
+
+	print("[CSVProcessor] Cutscene Triggers JSON saved to: ", output_path)
+
+
+## Process SHOP_SETS type CSV
+func process_shop_sets_csv(csv_path: String, output_path: String) -> void:
+	processing_started.emit("Memproses Shop Sets...")
+
+	var processor := ShopSetsProcessor.new()
+	var result := processor.process_to_file(csv_path, output_path)
+
+	if not result.get("success", false):
+		var errors: Array = result.get("errors", [])
+		processing_error.emit(errors if not errors.is_empty() else ["Gagal memproses file Shop Sets"])
+		return
+
+	var sets_count: int = result.get("sets_count", 0)
+	var status_msg := "Berhasil! %d shop sets diekspor → %s" % [sets_count, output_path]
+
+	var proc_errors: Array = result.get("errors", [])
+	if proc_errors.size() > 0:
+		processing_warning.emit(proc_errors, output_path, [] as Array[String], [] as Array[Dictionary], "", false)
+	else:
+		processing_completed.emit(true, status_msg)
+
+	print("[CSVProcessor] Shop Sets JSON saved to: ", output_path)
+
+
+## Process GAME_EVENTS type CSV
+func process_game_events_csv(csv_path: String, output_path: String) -> void:
+	processing_started.emit("Memproses Gameplay Events...")
+
+	var processor := GameplayEventsProcessor.new()
+	var result := processor.process_to_file(csv_path, output_path)
+
+	if not result.get("success", false):
+		var errors: Array = result.get("errors", [])
+		if errors.is_empty():
+			processing_error.emit(["Gagal memproses file Gameplay Events"])
+		else:
+			processing_error.emit(errors)
+		return
+
+	var rows_count: int = result.get("rows_count", 0)
+	var skipped: int = result.get("skipped_count", 0)
+	var skip_note := (" (%d baris non-data di-skip)" % skipped) if skipped > 0 else ""
+	var status_msg := "Berhasil! %d event diekspor%s → %s" % [rows_count, skip_note, output_path]
+
+	var proc_errors: Array = result.get("errors", [])
+	if proc_errors.size() > 0:
+		processing_warning.emit(
+			proc_errors,
+			output_path,
+			[] as Array[String],
+			[] as Array[Dictionary],
+			"",
+			false
+		)
+	else:
+		processing_completed.emit(true, status_msg)
+
+	print("[CSVProcessor] Gameplay Events JSON saved to: ", output_path)

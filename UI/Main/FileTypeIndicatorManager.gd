@@ -30,8 +30,11 @@ const CSV_TYPE_TO_FILE_TYPE: Dictionary = {
 	CSVConfig.CSVType.SFX: 6,  # FileType.SFX
 	CSVConfig.CSVType.MUSIC: 7,  # FileType.MUSIC
 	CSVConfig.CSVType.BLIP: 8,  # FileType.BLIP
-	CSVConfig.CSVType.AREA_TRIGGER: 9,  # FileType.AREA_TRIGGER
-	CSVConfig.CSVType.UNKNOWN: 0  # FileType.NONE
+	CSVConfig.CSVType.AREA_TRIGGER: 9,        # FileType.AREA_TRIGGER
+	CSVConfig.CSVType.GAME_EVENTS: 10,        # FileType.GAME_EVENTS
+	CSVConfig.CSVType.CUTSCENE_TRIGGERS: 11,  # FileType.CUTSCENE_TRIGGERS
+	CSVConfig.CSVType.SHOP_SETS: 12,          # FileType.SHOP_SETS
+	CSVConfig.CSVType.UNKNOWN: 0              # FileType.NONE
 }
 
 
@@ -115,6 +118,9 @@ func _get_container_for_type(file_type: int) -> PanelContainer:
 		7: return _containers.get("music")
 		8: return _containers.get("blips")
 		9: return _containers.get("area_trigger")
+		10: return _containers.get("game_events")
+		11: return _containers.get("cutscene_triggers")
+		12: return _containers.get("shop_sets")
 	return null
 
 
@@ -129,5 +135,8 @@ func _get_all_containers() -> Array:
 		_containers.get("sfx"),
 		_containers.get("music"),
 		_containers.get("blips"),
-		_containers.get("area_trigger")
+		_containers.get("area_trigger"),
+		_containers.get("game_events"),
+		_containers.get("cutscene_triggers"),
+		_containers.get("shop_sets")
 	]
