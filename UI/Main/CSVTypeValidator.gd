@@ -23,7 +23,8 @@ func validate_file(path: String, detected_type: CSVConfig.CSVType, patron_loader
 		CSVConfig.CSVType.AREA_TRIGGER, \
 		CSVConfig.CSVType.GAME_EVENTS, \
 		CSVConfig.CSVType.CUTSCENE_TRIGGERS, \
-		CSVConfig.CSVType.SHOP_SETS:
+		CSVConfig.CSVType.SHOP_SETS, \
+		CSVConfig.CSVType.CREDITS:
 			return { "valid": true }
 
 		_:

@@ -20,6 +20,7 @@ enum CSVType {
 	GAME_EVENTS,
 	CUTSCENE_TRIGGERS,
 	SHOP_SETS,
+	CREDITS,
 	UNKNOWN
 }
 
@@ -152,6 +153,14 @@ const TYPE_CONFIGS: Dictionary = {
 		"required_headers": ["set_shop_name", "product_category"],
 		"is_custom_processor": true
 	},
+	CSVType.CREDITS: {
+		"name": "credits",
+		"group_label": "categories",
+		"root_name": "",
+		"header_patterns": [["category", "role", "name"]],
+		"required_headers": ["category", "role", "name"],
+		"is_custom_processor": true
+	},
 	CSVType.UNKNOWN: {
 		"name": "unknown",
 		"group_label": "items",
@@ -222,6 +231,11 @@ static func _detect_from_header(header: String, suppress_warning: bool = false) 
 	for pattern in TYPE_CONFIGS[CSVType.SHOP_SETS]["header_patterns"]:
 		if _matches_pattern(header, pattern):
 			return CSVType.SHOP_SETS
+
+	# Check CREDITS (Credits.csv)
+	for pattern in TYPE_CONFIGS[CSVType.CREDITS]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.CREDITS
 
 	# Check GAME_SETTINGS type first (GameSettings.csv)
 	for pattern in TYPE_CONFIGS[CSVType.GAME_SETTINGS]["header_patterns"]:
@@ -330,6 +344,10 @@ static func configure_parser(parser: Node, csv_type: CSVType) -> void:
 			pass  # Tipe ini menggunakan processor khusus di AreaTriggerProcessor
 		CSVType.GAME_EVENTS:
 			pass  # Tipe ini menggunakan processor khusus di GameplayEventsProcessor
+		CSVType.SHOP_SETS:
+			pass  # Tipe ini menggunakan processor khusus di ShopSetsProcessor
+		CSVType.CREDITS:
+			pass  # Tipe ini menggunakan processor khusus di CreditsProcessor
 
 
 ## Configure generator berdasarkan tipe CSV
@@ -366,6 +384,10 @@ static func configure_generator(generator: Node, csv_type: CSVType) -> void:
 			pass  # Tipe ini menggunakan processor khusus di AreaTriggerProcessor
 		CSVType.GAME_EVENTS:
 			pass  # Tipe ini menggunakan processor khusus di GameplayEventsProcessor
+		CSVType.SHOP_SETS:
+			pass  # Tipe ini menggunakan processor khusus di ShopSetsProcessor
+		CSVType.CREDITS:
+			pass  # Tipe ini menggunakan processor khusus di CreditsProcessor
 
 
 ## Konfigurasi parser dan generator secara bersamaan

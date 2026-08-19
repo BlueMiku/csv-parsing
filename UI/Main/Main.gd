@@ -37,13 +37,14 @@ extends Control
 @onready var game_events_container: PanelContainer = %GameEventsContainer
 @onready var cutscene_trigger_container: PanelContainer = %CutsceneTriggerContainer
 @onready var shop_sets_container: PanelContainer = %ShopSetsContainer
+@onready var credits_container: PanelContainer = %CreditsContainer
 @onready var type_detection_section: VBoxContainer = $Panel/VBoxContainer/TypeDetectionSection
 
 @onready var output_section: HBoxContainer = $Panel/VBoxContainer/OutputSection
 @onready var root_name_section: HBoxContainer = $Panel/VBoxContainer/RootNameSection
 @onready var buttons_container: HBoxContainer = $Panel/VBoxContainer/ButtonsContainer
 
-enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS }
+enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS, CREDITS }
 
 # Managers
 var _type_indicator_manager: FileTypeIndicatorManager
@@ -118,7 +119,8 @@ func _create_type_indicator_manager() -> FileTypeIndicatorManager:
 		"area_trigger": area_trigger_container,
 		"game_events": game_events_container,
 		"cutscene_triggers": cutscene_trigger_container,
-		"shop_sets": shop_sets_container
+		"shop_sets": shop_sets_container,
+		"credits": credits_container
 	}
 	var manager = FileTypeIndicatorManager.new(containers, type_detection_section)
 	manager.init_indicators()
@@ -224,6 +226,9 @@ func _on_file_selected(path: String) -> void:
 		FileType.SHOP_SETS:
 			_current_csv_type = CSVConfig.CSVType.SHOP_SETS
 			_ui_state_manager.show_file_type_selected("Shop Sets")
+		FileType.CREDITS:
+			_current_csv_type = CSVConfig.CSVType.CREDITS
+			_ui_state_manager.show_file_type_selected("Credits")
 		_:
 			_load_chapters(path)
 
@@ -349,6 +354,8 @@ func _on_generate_pressed() -> void:
 			_csv_processor.process_cutscene_trigger_csv(csv_path, output_path)
 		FileType.SHOP_SETS:
 			_csv_processor.process_shop_sets_csv(csv_path, output_path)
+		FileType.CREDITS:
+			_csv_processor.process_credits_csv(csv_path, output_path)
 		FileType.ITEMS:
 			_current_csv_type = CSVConfig.detect_type(csv_path)
 			if not _is_item_type(_current_csv_type):
@@ -500,6 +507,9 @@ func _update_sections_visibility() -> void:
 			output_section.visible = true
 			buttons_container.visible = true
 		FileType.SHOP_SETS:
+			output_section.visible = true
+			buttons_container.visible = true
+		FileType.CREDITS:
 			output_section.visible = true
 			buttons_container.visible = true
 

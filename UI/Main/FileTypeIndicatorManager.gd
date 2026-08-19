@@ -34,6 +34,7 @@ const CSV_TYPE_TO_FILE_TYPE: Dictionary = {
 	CSVConfig.CSVType.GAME_EVENTS: 10,        # FileType.GAME_EVENTS
 	CSVConfig.CSVType.CUTSCENE_TRIGGERS: 11,  # FileType.CUTSCENE_TRIGGERS
 	CSVConfig.CSVType.SHOP_SETS: 12,          # FileType.SHOP_SETS
+	CSVConfig.CSVType.CREDITS: 13,            # FileType.CREDITS
 	CSVConfig.CSVType.UNKNOWN: 0              # FileType.NONE
 }
 
@@ -121,6 +122,7 @@ func _get_container_for_type(file_type: int) -> PanelContainer:
 		10: return _containers.get("game_events")
 		11: return _containers.get("cutscene_triggers")
 		12: return _containers.get("shop_sets")
+		13: return _containers.get("credits")
 	return null
 
 
@@ -138,5 +140,6 @@ func _get_all_containers() -> Array:
 		_containers.get("area_trigger"),
 		_containers.get("game_events"),
 		_containers.get("cutscene_triggers"),
-		_containers.get("shop_sets")
+		_containers.get("shop_sets"),
+		_containers.get("credits")
 	]
