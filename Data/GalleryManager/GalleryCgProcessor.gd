@@ -1,13 +1,14 @@
-class_name CreditsProcessor
+class_name GalleryCgProcessor
 extends RefCounted
 
-## Processor untuk Credits CSV
-## Format: Category,Role,Name — kolom dideteksi dari header (header-mapped).
-## Baris kategori hanya mengisi kolom Category, baris role pertama mengisi
-## Role (+Name jika ada), baris nama tambahan hanya mengisi Name. Kolom
-## kosong berarti "lanjutan dari baris sebelumnya" (mengikuti konvensi
-## forward-fill sheet Google Sheets aslinya).
-## Output: { "Categories": [ { "category", "jobs": [ { "title", "names": [...] } ] } ] }
+## Processor untuk Album CG CSV
+## Format: ID,cg_name,variant,Title — kolom dideteksi dari header (header-mapped).
+## Baris dengan cg_name yang sama dikelompokkan menjadi satu entry gallery
+## (satu slot di grid), dengan "variants" berisi urutan node-list per baris
+## dalam urutan CSV — dipakai CG Viewer untuk cycle antar variant.
+## variant "none" (atau kosong) berarti tidak ada node tambahan selain
+## background CG itu sendiri.
+## Output: { "Cgs": [ { "cg_name", "title", "variants": [[...], ...] } ] }
 
 var _errors: Array[String] = []
 
@@ -35,12 +36,10 @@ func process(csv_path: String) -> Dictionary:
 	for i in range(raw_headers.size()):
 		hmap[raw_headers[i].strip_edges().to_lower()] = i
 
-	if not (hmap.has("category") and hmap.has("role") and hmap.has("name")):
-		return _fail("Header CSV tidak sesuai — dibutuhkan kolom Category, Role, Name.")
+	if not (hmap.has("cg_name") and hmap.has("variant") and hmap.has("title")):
+		return _fail("Header CSV tidak sesuai — dibutuhkan kolom cg_name, variant, Title.")
 
-	var categories: Array = []
-	var current_category: Dictionary = {}
-	var current_job: Dictionary = {}
+	var cgs: Dictionary = {}  # cg_name -> entry dict, insertion-ordered
 	var skipped := 0
 
 	for i in range(1, lines.size()):
@@ -49,43 +48,32 @@ func process(csv_path: String) -> Dictionary:
 			continue
 		var cols := _parse_line(line)
 
-		var category := _col(cols, hmap, "category")
-		var role := _col(cols, hmap, "role")
-		var person_name := _col(cols, hmap, "name")
+		var cg_name := _col(cols, hmap, "cg_name")
+		var variant_raw := _col(cols, hmap, "variant")
+		var title := _col(cols, hmap, "title")
 
-		if category.is_empty() and role.is_empty() and person_name.is_empty():
+		if cg_name.is_empty():
 			skipped += 1
 			continue
 
-		if not category.is_empty():
-			current_category = {"category": category, "jobs": []}
-			categories.append(current_category)
-			current_job = {}
+		if not cgs.has(cg_name):
+			# First row seen for this cg_name supplies the title.
+			cgs[cg_name] = {"cg_name": cg_name, "title": title, "variants": []}
 
-		if current_category.is_empty():
-			# Baris nama/role muncul sebelum ada kategori sama sekali
-			skipped += 1
-			continue
+		cgs[cg_name]["variants"].append(_parse_variant(variant_raw))
 
-		if not role.is_empty():
-			current_job = {"title": role, "names": []}
-			current_category["jobs"].append(current_job)
+	var cg_list: Array = []
+	for cg_name in cgs.keys():
+		cg_list.append(cgs[cg_name])
 
-		if not person_name.is_empty():
-			if current_job.is_empty():
-				# Nama tanpa role sebelumnya (misal kategori "Special Thanks")
-				current_job = {"title": "", "names": []}
-				current_category["jobs"].append(current_job)
-			current_job["names"].append(person_name)
-
-	var data := {"Categories": categories}
+	var data := {"Cgs": cg_list}
 	var json_str := JSON.stringify(data, "\t")
 
 	return {
 		"success": true,
 		"json_string": json_str,
-		"categories": categories,
-		"categories_count": categories.size(),
+		"cgs": cg_list,
+		"cgs_count": cg_list.size(),
 		"skipped_count": skipped,
 		"errors": _errors.duplicate()
 	}
@@ -109,6 +97,21 @@ func process_to_file(csv_path: String, output_path: String) -> Dictionary:
 
 func get_errors() -> Array[String]:
 	return _errors
+
+
+## "none" (case-insensitive) atau kosong berarti tidak ada node tambahan
+## selain background CG-nya sendiri.
+func _parse_variant(raw: String) -> Array:
+	var trimmed := raw.strip_edges()
+	if trimmed.is_empty() or trimmed.to_lower() == "none":
+		return []
+	var parts := trimmed.split(",")
+	var result: Array = []
+	for part in parts:
+		var node_name: String = part.strip_edges()
+		if not node_name.is_empty():
+			result.append(node_name)
+	return result
 
 
 # ── Column helpers ────────────────────────────────────────────────────────────

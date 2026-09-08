@@ -242,6 +242,54 @@ text = "Credits"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="GalleryCgContainer" type="PanelContainer" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="GalleryCgLabel" type="Label" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons/GalleryCgContainer"]
+layout_mode = 2
+text = "Gallery CG"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GalleryArtworkContainer" type="PanelContainer" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="GalleryArtworkLabel" type="Label" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons/GalleryArtworkContainer"]
+layout_mode = 2
+text = "Gallery Artwork"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ArchiveProfilesContainer" type="PanelContainer" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ArchiveProfilesLabel" type="Label" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons/ArchiveProfilesContainer"]
+layout_mode = 2
+text = "Archive Profiles"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ArchiveProfileContentContainer" type="PanelContainer" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ArchiveProfileContentLabel" type="Label" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons/ArchiveProfileContentContainer"]
+layout_mode = 2
+text = "Archive Profile Content"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="OutputSection" type="HBoxContainer" parent="Panel/VBoxContainer"]
 layout_mode = 2
 
@@ -290,6 +338,15 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "e.g. izakaya_storefront"
+
+[node name="StoryLookupSection" type="HBoxContainer" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="StoryLookupCheckbox" type="CheckBox" parent="Panel/VBoxContainer/StoryLookupSection"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Also generate Story chapter lookup (chapter flag -> button_title)"
 
 [node name="ButtonsContainer" type="HBoxContainer" parent="Panel/VBoxContainer"]
 layout_mode = 2

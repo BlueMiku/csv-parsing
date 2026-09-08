@@ -24,7 +24,11 @@ func validate_file(path: String, detected_type: CSVConfig.CSVType, patron_loader
 		CSVConfig.CSVType.GAME_EVENTS, \
 		CSVConfig.CSVType.CUTSCENE_TRIGGERS, \
 		CSVConfig.CSVType.SHOP_SETS, \
-		CSVConfig.CSVType.CREDITS:
+		CSVConfig.CSVType.CREDITS, \
+		CSVConfig.CSVType.GALLERY_CG, \
+		CSVConfig.CSVType.GALLERY_ARTWORK, \
+		CSVConfig.CSVType.ARCHIVE_PROFILES, \
+		CSVConfig.CSVType.ARCHIVE_PROFILE_CONTENT:
 			return { "valid": true }
 
 		_:

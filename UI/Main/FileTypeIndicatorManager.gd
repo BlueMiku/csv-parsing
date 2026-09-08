@@ -35,6 +35,10 @@ const CSV_TYPE_TO_FILE_TYPE: Dictionary = {
 	CSVConfig.CSVType.CUTSCENE_TRIGGERS: 11,  # FileType.CUTSCENE_TRIGGERS
 	CSVConfig.CSVType.SHOP_SETS: 12,          # FileType.SHOP_SETS
 	CSVConfig.CSVType.CREDITS: 13,            # FileType.CREDITS
+	CSVConfig.CSVType.GALLERY_CG: 14,         # FileType.GALLERY_CG
+	CSVConfig.CSVType.GALLERY_ARTWORK: 15,    # FileType.GALLERY_ARTWORK
+	CSVConfig.CSVType.ARCHIVE_PROFILES: 16,        # FileType.ARCHIVE_PROFILES
+	CSVConfig.CSVType.ARCHIVE_PROFILE_CONTENT: 17, # FileType.ARCHIVE_PROFILE_CONTENT
 	CSVConfig.CSVType.UNKNOWN: 0              # FileType.NONE
 }
 
@@ -123,6 +127,10 @@ func _get_container_for_type(file_type: int) -> PanelContainer:
 		11: return _containers.get("cutscene_triggers")
 		12: return _containers.get("shop_sets")
 		13: return _containers.get("credits")
+		14: return _containers.get("gallery_cg")
+		15: return _containers.get("gallery_artwork")
+		16: return _containers.get("archive_profiles")
+		17: return _containers.get("archive_profile_content")
 	return null
 
 
@@ -141,5 +149,9 @@ func _get_all_containers() -> Array:
 		_containers.get("game_events"),
 		_containers.get("cutscene_triggers"),
 		_containers.get("shop_sets"),
-		_containers.get("credits")
+		_containers.get("credits"),
+		_containers.get("gallery_cg"),
+		_containers.get("gallery_artwork"),
+		_containers.get("archive_profiles"),
+		_containers.get("archive_profile_content")
 	]

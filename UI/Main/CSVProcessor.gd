@@ -435,6 +435,118 @@ func process_credits_csv(csv_path: String, output_path: String) -> void:
 	print("[CSVProcessor] Credits JSON saved to: ", output_path)
 
 
+## Process GALLERY_CG type CSV
+func process_gallery_cg_csv(csv_path: String, output_path: String) -> void:
+	processing_started.emit("Memproses Gallery CG...")
+
+	var processor := GalleryCgProcessor.new()
+	var result := processor.process_to_file(csv_path, output_path)
+
+	if not result.get("success", false):
+		var errors: Array = result.get("errors", [])
+		processing_error.emit(errors if not errors.is_empty() else ["Gagal memproses file Gallery CG"])
+		return
+
+	var cgs_count: int = result.get("cgs_count", 0)
+	var skipped: int = result.get("skipped_count", 0)
+	var skip_note := (" (%d baris di-skip)" % skipped) if skipped > 0 else ""
+	var status_msg := "Berhasil! %d CG diekspor%s → %s" % [cgs_count, skip_note, output_path]
+
+	var proc_errors: Array = result.get("errors", [])
+	if proc_errors.size() > 0:
+		processing_warning.emit(proc_errors, output_path, [] as Array[String], [] as Array[Dictionary], "", false)
+	else:
+		processing_completed.emit(true, status_msg)
+
+	print("[CSVProcessor] Gallery CG JSON saved to: ", output_path)
+
+
+## Process GALLERY_ARTWORK type CSV
+func process_gallery_artwork_csv(csv_path: String, output_path: String) -> void:
+	processing_started.emit("Memproses Gallery Artwork...")
+
+	var processor := GalleryArtworkProcessor.new()
+	var result := processor.process_to_file(csv_path, output_path)
+
+	if not result.get("success", false):
+		var errors: Array = result.get("errors", [])
+		processing_error.emit(errors if not errors.is_empty() else ["Gagal memproses file Gallery Artwork"])
+		return
+
+	var artworks_count: int = result.get("artworks_count", 0)
+	var skipped: int = result.get("skipped_count", 0)
+	var skip_note := (" (%d baris di-skip)" % skipped) if skipped > 0 else ""
+	var status_msg := "Berhasil! %d artwork diekspor%s → %s" % [artworks_count, skip_note, output_path]
+
+	var proc_errors: Array = result.get("errors", [])
+	if proc_errors.size() > 0:
+		processing_warning.emit(proc_errors, output_path, [] as Array[String], [] as Array[Dictionary], "", false)
+	else:
+		processing_completed.emit(true, status_msg)
+
+	print("[CSVProcessor] Gallery Artwork JSON saved to: ", output_path)
+
+
+## Process ARCHIVE_PROFILES type CSV (master ArchiveList.csv, Profiles + Codex + Items + Story tab rows).
+## story_lookup_output_path opsional — kalau diisi (dari checkbox "generate
+## Story chapter lookup" di UI), ArchiveProfileProcessor juga menulis chapter
+## flag -> button_title lookup ke situ sebagai file terpisah.
+func process_archive_profiles_csv(csv_path: String, output_path: String, story_lookup_output_path: String = "") -> void:
+	processing_started.emit("Memproses Archive List...")
+
+	var processor := ArchiveProfileProcessor.new()
+	var result := processor.process_to_file(csv_path, output_path, story_lookup_output_path)
+
+	if not result.get("success", false):
+		var errors: Array = result.get("errors", [])
+		processing_error.emit(errors if not errors.is_empty() else ["Gagal memproses file Archive List"])
+		return
+
+	var profiles_count: int = result.get("profiles_count", 0)
+	var codex_folder_count: int = result.get("codex_folder_count", 0)
+	var items_folder_count: int = result.get("items_folder_count", 0)
+	var story_folder_count: int = result.get("story_folder_count", 0)
+	var skipped: int = result.get("skipped_count", 0)
+	var skip_note := (" (%d baris di-skip)" % skipped) if skipped > 0 else ""
+	var status_msg := "Berhasil! %d profile, %d folder codex, %d folder items, %d folder story diekspor%s → %s" % [profiles_count, codex_folder_count, items_folder_count, story_folder_count, skip_note, output_path]
+	if result.has("story_lookup_output_path"):
+		status_msg += " (+ %d entry chapter lookup → %s)" % [result.get("story_lookup_count", 0), result["story_lookup_output_path"]]
+
+	var proc_errors: Array = result.get("errors", [])
+	if proc_errors.size() > 0:
+		processing_warning.emit(proc_errors, output_path, [] as Array[String], [] as Array[Dictionary], "", false)
+	else:
+		processing_completed.emit(true, status_msg)
+
+	print("[CSVProcessor] Archive List JSON saved to: ", output_path)
+
+
+## Process ARCHIVE_PROFILE_CONTENT type CSV (per-character content sheet, e.g. "... - Farah.csv")
+func process_archive_profile_content_csv(csv_path: String, output_path: String) -> void:
+	processing_started.emit("Memproses Archive Profile Content...")
+
+	var processor := ArchiveProfileContentProcessor.new()
+	var result := processor.process_to_file(csv_path, output_path)
+
+	if not result.get("success", false):
+		var errors: Array = result.get("errors", [])
+		processing_error.emit(errors if not errors.is_empty() else ["Gagal memproses file Archive Profile Content"])
+		return
+
+	var entries_count: int = result.get("entries_count", 0)
+	var skipped: int = result.get("skipped_count", 0)
+	var skip_note := (" (%d baris di-skip)" % skipped) if skipped > 0 else ""
+	var status_msg := "Berhasil! %d entri konten diekspor%s → %s" % [entries_count, skip_note, output_path]
+
+	var proc_errors: Array = result.get("errors", [])
+	if proc_errors.size() > 0:
+		processing_warning.emit(proc_errors, output_path, [] as Array[String], [] as Array[Dictionary], "", false)
+	else:
+		processing_completed.emit(true, status_msg)
+
+	print("[CSVProcessor] Archive Profile Content JSON saved to: ", output_path)
+
+
 ## Process GAME_EVENTS type CSV
 func process_game_events_csv(csv_path: String, output_path: String) -> void:
 	processing_started.emit("Memproses Gameplay Events...")

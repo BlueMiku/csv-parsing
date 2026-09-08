@@ -57,7 +57,7 @@ static func get_dialog_config() -> Dictionary:
 static func get_key_item_schema() -> Dictionary:
 	return {
 	"id": {"header_name": "ID", "type": "int", "is_id": true},
-	"filename": {"header_name": "filename", "type": "string", "default": ""},
+	"iconDefault": {"header_name": "filename", "type": "string", "default": ""},
 	"nameEnglish": {"header_name": "name_english", "type": "string", "default": ""},
 	"description": {"header_name": "description", "type": "string", "default": ""},
 	"bonus": {"header_name": "bonus", "type": "array", "default": []},
@@ -66,7 +66,7 @@ static func get_key_item_schema() -> Dictionary:
 	
 ## Key order untuk Key Item JSON output	
 static func get_key_item_key_order() -> Array:
-	return ["id", "filename", "nameEnglish", "description", "bonus", "character"]
+	return ["id", "iconDefault", "nameEnglish", "description", "bonus", "character"]
 	
 ## Key Item parser configuration
 static func get_key_item_config() -> Dictionary:
@@ -236,7 +236,7 @@ static func get_beverage_config() -> Dictionary:
 ## Schema untuk Decoration Data CSV
 static func get_decoration_schema() -> Dictionary:
 	return {
-		"id": {"header_name": "no.", "column_index": 0, "type": "int", "default": 0, "is_id": true},
+		"id": {"header_name": "id", "column_index": 1, "type": "int", "default": 0, "is_id": true},
 		"type": {"header_name": "type", "type": "string", "default": ""},
 		"nameEnglish": {"header_name": "name", "type": "string", "default": ""},
 		"price": {"header_name": "price", "type": "int", "default": 0},

@@ -1,13 +1,14 @@
-class_name CreditsProcessor
+class_name GalleryArtworkProcessor
 extends RefCounted
 
-## Processor untuk Credits CSV
-## Format: Category,Role,Name — kolom dideteksi dari header (header-mapped).
-## Baris kategori hanya mengisi kolom Category, baris role pertama mengisi
-## Role (+Name jika ada), baris nama tambahan hanya mengisi Name. Kolom
-## kosong berarti "lanjutan dari baris sebelumnya" (mengikuti konvensi
-## forward-fill sheet Google Sheets aslinya).
-## Output: { "Categories": [ { "category", "jobs": [ { "title", "names": [...] } ] } ] }
+## Processor untuk Album Artwork CSV
+## Format: ID,Requirement,filename,Title,groupid — kolom dideteksi dari
+## header (header-mapped). Baris dengan groupid yang sama dikelompokkan
+## menjadi satu entry gallery (satu slot di grid), dengan "filenames" berisi
+## urutan file per baris dalam urutan CSV — dipakai Artwork Viewer untuk
+## cycle antar file dalam satu slot. groupid murni data key internal,
+## tidak pernah ditampilkan — Title tetap satu-satunya teks yang dirender.
+## Output: { "Artworks": [ { "group_id", "title", "requirement", "filenames": [...] } ] }
 
 var _errors: Array[String] = []
 
@@ -35,12 +36,10 @@ func process(csv_path: String) -> Dictionary:
 	for i in range(raw_headers.size()):
 		hmap[raw_headers[i].strip_edges().to_lower()] = i
 
-	if not (hmap.has("category") and hmap.has("role") and hmap.has("name")):
-		return _fail("Header CSV tidak sesuai — dibutuhkan kolom Category, Role, Name.")
+	if not (hmap.has("filename") and hmap.has("title") and hmap.has("groupid")):
+		return _fail("Header CSV tidak sesuai — dibutuhkan kolom filename, Title, groupid.")
 
-	var categories: Array = []
-	var current_category: Dictionary = {}
-	var current_job: Dictionary = {}
+	var groups: Dictionary = {}  # groupid -> entry dict, insertion-ordered
 	var skipped := 0
 
 	for i in range(1, lines.size()):
@@ -49,43 +48,39 @@ func process(csv_path: String) -> Dictionary:
 			continue
 		var cols := _parse_line(line)
 
-		var category := _col(cols, hmap, "category")
-		var role := _col(cols, hmap, "role")
-		var person_name := _col(cols, hmap, "name")
+		var group_id := _col(cols, hmap, "groupid")
+		var filename := _col(cols, hmap, "filename")
+		var title := _col(cols, hmap, "title")
+		var requirement := _col(cols, hmap, "requirement")
 
-		if category.is_empty() and role.is_empty() and person_name.is_empty():
+		if group_id.is_empty() or filename.is_empty():
 			skipped += 1
 			continue
 
-		if not category.is_empty():
-			current_category = {"category": category, "jobs": []}
-			categories.append(current_category)
-			current_job = {}
+		if not groups.has(group_id):
+			# First row seen for this groupid supplies the title/requirement.
+			var group_id_val = int(group_id) if group_id.is_valid_int() else group_id
+			groups[group_id] = {
+				"group_id": group_id_val,
+				"title": title,
+				"requirement": requirement,
+				"filenames": []
+			}
 
-		if current_category.is_empty():
-			# Baris nama/role muncul sebelum ada kategori sama sekali
-			skipped += 1
-			continue
+		groups[group_id]["filenames"].append(filename)
 
-		if not role.is_empty():
-			current_job = {"title": role, "names": []}
-			current_category["jobs"].append(current_job)
+	var artwork_list: Array = []
+	for group_id in groups.keys():
+		artwork_list.append(groups[group_id])
 
-		if not person_name.is_empty():
-			if current_job.is_empty():
-				# Nama tanpa role sebelumnya (misal kategori "Special Thanks")
-				current_job = {"title": "", "names": []}
-				current_category["jobs"].append(current_job)
-			current_job["names"].append(person_name)
-
-	var data := {"Categories": categories}
+	var data := {"Artworks": artwork_list}
 	var json_str := JSON.stringify(data, "\t")
 
 	return {
 		"success": true,
 		"json_string": json_str,
-		"categories": categories,
-		"categories_count": categories.size(),
+		"artworks": artwork_list,
+		"artworks_count": artwork_list.size(),
 		"skipped_count": skipped,
 		"errors": _errors.duplicate()
 	}

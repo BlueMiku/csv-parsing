@@ -160,15 +160,25 @@ func _int(cols: Array, h: Dictionary, key: String, default: int) -> int:
 
 # ── CSV parser ────────────────────────────────────────────────────────────────
 
+## Escaped-quote pairs ("") need BOTH characters consumed as one unit — a
+## plain `for i in range(...)` loop can't skip an index, so the previous
+## version appended the literal quote for the first "" but then reprocessed
+## the second quote as an independent (wrong) toggle, desyncing in_quotes
+## for the rest of the line whenever a field contained escaped quotes. Any
+## comma after that point got read as a real delimiter instead of literal
+## content, corrupting the field and every column after it on that row.
 func _parse_line(line: String) -> Array:
 	var result: Array = []
 	var field := ""
 	var in_quotes := false
-	for i in range(line.length()):
+	var i := 0
+	var length := line.length()
+	while i < length:
 		var c := line[i]
 		if c == '"':
-			if in_quotes and i + 1 < line.length() and line[i + 1] == '"':
+			if in_quotes and i + 1 < length and line[i + 1] == '"':
 				field += '"'
+				i += 1  # also consume the second quote of the escaped pair
 			else:
 				in_quotes = !in_quotes
 		elif c == ',' and not in_quotes:
@@ -176,6 +186,7 @@ func _parse_line(line: String) -> Array:
 			field = ""
 		else:
 			field += c
+		i += 1
 	result.append(field)
 	return result
 

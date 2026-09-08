@@ -21,6 +21,10 @@ enum CSVType {
 	CUTSCENE_TRIGGERS,
 	SHOP_SETS,
 	CREDITS,
+	GALLERY_CG,
+	GALLERY_ARTWORK,
+	ARCHIVE_PROFILES,
+	ARCHIVE_PROFILE_CONTENT,
 	UNKNOWN
 }
 
@@ -161,6 +165,38 @@ const TYPE_CONFIGS: Dictionary = {
 		"required_headers": ["category", "role", "name"],
 		"is_custom_processor": true
 	},
+	CSVType.GALLERY_CG: {
+		"name": "gallery_cg",
+		"group_label": "cgs",
+		"root_name": "",
+		"header_patterns": [["cg_name", "variant", "title"]],
+		"required_headers": ["cg_name", "variant", "title"],
+		"is_custom_processor": true
+	},
+	CSVType.GALLERY_ARTWORK: {
+		"name": "gallery_artwork",
+		"group_label": "artworks",
+		"root_name": "",
+		"header_patterns": [["requirement", "filename", "groupid"]],
+		"required_headers": ["filename", "title", "groupid"],
+		"is_custom_processor": true
+	},
+	CSVType.ARCHIVE_PROFILES: {
+		"name": "archive_profiles",
+		"group_label": "profiles",
+		"root_name": "",
+		"header_patterns": [["tab", "typebutton", "contentformat", "buttontitle"]],
+		"required_headers": ["tab", "typebutton", "json", "contentformat", "buttontitle", "content", "requirements"],
+		"is_custom_processor": true
+	},
+	CSVType.ARCHIVE_PROFILE_CONTENT: {
+		"name": "archive_profile_content",
+		"group_label": "content",
+		"root_name": "",
+		"header_patterns": [["content_name", "raw"]],
+		"required_headers": ["id", "content_name", "content"],
+		"is_custom_processor": true
+	},
 	CSVType.UNKNOWN: {
 		"name": "unknown",
 		"group_label": "items",
@@ -236,6 +272,26 @@ static func _detect_from_header(header: String, suppress_warning: bool = false) 
 	for pattern in TYPE_CONFIGS[CSVType.CREDITS]["header_patterns"]:
 		if _matches_pattern(header, pattern):
 			return CSVType.CREDITS
+
+	# Check GALLERY_CG (AlbumCG.csv)
+	for pattern in TYPE_CONFIGS[CSVType.GALLERY_CG]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.GALLERY_CG
+
+	# Check GALLERY_ARTWORK (AlbumArtwork.csv)
+	for pattern in TYPE_CONFIGS[CSVType.GALLERY_ARTWORK]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.GALLERY_ARTWORK
+
+	# Check ARCHIVE_PROFILES (ArchiveList.csv — master structure sheet, Profiles tab rows)
+	for pattern in TYPE_CONFIGS[CSVType.ARCHIVE_PROFILES]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.ARCHIVE_PROFILES
+
+	# Check ARCHIVE_PROFILE_CONTENT (per-character content sheet, e.g. "... - Farah.csv")
+	for pattern in TYPE_CONFIGS[CSVType.ARCHIVE_PROFILE_CONTENT]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.ARCHIVE_PROFILE_CONTENT
 
 	# Check GAME_SETTINGS type first (GameSettings.csv)
 	for pattern in TYPE_CONFIGS[CSVType.GAME_SETTINGS]["header_patterns"]:
@@ -348,6 +404,14 @@ static func configure_parser(parser: Node, csv_type: CSVType) -> void:
 			pass  # Tipe ini menggunakan processor khusus di ShopSetsProcessor
 		CSVType.CREDITS:
 			pass  # Tipe ini menggunakan processor khusus di CreditsProcessor
+		CSVType.GALLERY_CG:
+			pass  # Tipe ini menggunakan processor khusus di GalleryCgProcessor
+		CSVType.GALLERY_ARTWORK:
+			pass  # Tipe ini menggunakan processor khusus di GalleryArtworkProcessor
+		CSVType.ARCHIVE_PROFILES:
+			pass  # Tipe ini menggunakan processor khusus di ArchiveProfileProcessor
+		CSVType.ARCHIVE_PROFILE_CONTENT:
+			pass  # Tipe ini menggunakan processor khusus di ArchiveProfileContentProcessor
 
 
 ## Configure generator berdasarkan tipe CSV
@@ -388,6 +452,14 @@ static func configure_generator(generator: Node, csv_type: CSVType) -> void:
 			pass  # Tipe ini menggunakan processor khusus di ShopSetsProcessor
 		CSVType.CREDITS:
 			pass  # Tipe ini menggunakan processor khusus di CreditsProcessor
+		CSVType.GALLERY_CG:
+			pass  # Tipe ini menggunakan processor khusus di GalleryCgProcessor
+		CSVType.GALLERY_ARTWORK:
+			pass  # Tipe ini menggunakan processor khusus di GalleryArtworkProcessor
+		CSVType.ARCHIVE_PROFILES:
+			pass  # Tipe ini menggunakan processor khusus di ArchiveProfileProcessor
+		CSVType.ARCHIVE_PROFILE_CONTENT:
+			pass  # Tipe ini menggunakan processor khusus di ArchiveProfileContentProcessor
 
 
 ## Konfigurasi parser dan generator secara bersamaan

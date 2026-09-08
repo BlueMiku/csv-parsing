@@ -1,13 +1,18 @@
-class_name CreditsProcessor
+class_name ArchiveProfileContentProcessor
 extends RefCounted
 
-## Processor untuk Credits CSV
-## Format: Category,Role,Name — kolom dideteksi dari header (header-mapped).
-## Baris kategori hanya mengisi kolom Category, baris role pertama mengisi
-## Role (+Name jika ada), baris nama tambahan hanya mengisi Name. Kolom
-## kosong berarti "lanjutan dari baris sebelumnya" (mengikuti konvensi
-## forward-fill sheet Google Sheets aslinya).
-## Output: { "Categories": [ { "category", "jobs": [ { "title", "names": [...] } ] } ] }
+## Processor untuk CSV konten profile per-karakter (mis. "... - Farah.csv").
+## Format: id,content_name,content,:,len,RAW — kolom dideteksi dari header
+## (header-mapped); kolom ":", len, dan RAW hanya bantuan untuk pembuat CSV
+## (word count, preview gabungan) dan tidak dibawa ke output.
+## Baris metadata di atas data asli (nama karakter, status export, timestamp
+## import) dan baris kosong sisa di akhir sheet dilewati — dikenali lewat kolom
+## id yang harus berupa angka valid DAN content_name yang tidak kosong.
+## Output flat: { content_name: content, ... } — dipakai ArchiveMenuUi untuk
+## resolve key dari button_title/content di archive_profiles.json (lihat
+## ArchiveProfileProcessor) menjadi teks yang sebenarnya ditampilkan. Disimpan
+## per-karakter (nama file = nilai kolom "json" milik karakter itu, mis.
+## profile_farah.json) supaya bisa di-load on-demand, bukan sekaligus semua.
 
 var _errors: Array[String] = []
 
@@ -35,12 +40,10 @@ func process(csv_path: String) -> Dictionary:
 	for i in range(raw_headers.size()):
 		hmap[raw_headers[i].strip_edges().to_lower()] = i
 
-	if not (hmap.has("category") and hmap.has("role") and hmap.has("name")):
-		return _fail("Header CSV tidak sesuai — dibutuhkan kolom Category, Role, Name.")
+	if not (hmap.has("id") and hmap.has("content_name") and hmap.has("content")):
+		return _fail("Header CSV tidak sesuai — dibutuhkan kolom id, content_name, content.")
 
-	var categories: Array = []
-	var current_category: Dictionary = {}
-	var current_job: Dictionary = {}
+	var content_map: Dictionary = {}  # content_name -> content, insertion-ordered
 	var skipped := 0
 
 	for i in range(1, lines.size()):
@@ -49,43 +52,28 @@ func process(csv_path: String) -> Dictionary:
 			continue
 		var cols := _parse_line(line)
 
-		var category := _col(cols, hmap, "category")
-		var role := _col(cols, hmap, "role")
-		var person_name := _col(cols, hmap, "name")
-
-		if category.is_empty() and role.is_empty() and person_name.is_empty():
+		var id_raw := _col(cols, hmap, "id")
+		var content_name := _col(cols, hmap, "content_name")
+		# Baris metadata (id non-numerik, mis. "Farah"/"Exported"/"Imported") dan
+		# baris kosong sisa (id numerik tapi content_name kosong) dilewati di sini.
+		if not id_raw.is_valid_int() or content_name.is_empty():
 			skipped += 1
 			continue
 
-		if not category.is_empty():
-			current_category = {"category": category, "jobs": []}
-			categories.append(current_category)
-			current_job = {}
+		if content_map.has(content_name):
+			var dup_msg = "content_name duplikat: '%s' (baris %d) — entri sebelumnya ditimpa." % [content_name, i + 1]
+			push_warning(dup_msg)
+			_errors.append(dup_msg)
 
-		if current_category.is_empty():
-			# Baris nama/role muncul sebelum ada kategori sama sekali
-			skipped += 1
-			continue
+		content_map[content_name] = _col(cols, hmap, "content")
 
-		if not role.is_empty():
-			current_job = {"title": role, "names": []}
-			current_category["jobs"].append(current_job)
-
-		if not person_name.is_empty():
-			if current_job.is_empty():
-				# Nama tanpa role sebelumnya (misal kategori "Special Thanks")
-				current_job = {"title": "", "names": []}
-				current_category["jobs"].append(current_job)
-			current_job["names"].append(person_name)
-
-	var data := {"Categories": categories}
-	var json_str := JSON.stringify(data, "\t")
+	var json_str := JSON.stringify(content_map, "\t")
 
 	return {
 		"success": true,
 		"json_string": json_str,
-		"categories": categories,
-		"categories_count": categories.size(),
+		"content_map": content_map,
+		"entries_count": content_map.size(),
 		"skipped_count": skipped,
 		"errors": _errors.duplicate()
 	}

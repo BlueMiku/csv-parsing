@@ -34,17 +34,23 @@ extends Control
 @onready var area_trigger_container: PanelContainer = %AreaTriggerContainer
 @onready var area_name_section: HBoxContainer = %AreaNameSection
 @onready var area_name_edit: LineEdit = %AreaNameEdit
+@onready var story_lookup_section: HBoxContainer = %StoryLookupSection
+@onready var story_lookup_checkbox: CheckBox = %StoryLookupCheckbox
 @onready var game_events_container: PanelContainer = %GameEventsContainer
 @onready var cutscene_trigger_container: PanelContainer = %CutsceneTriggerContainer
 @onready var shop_sets_container: PanelContainer = %ShopSetsContainer
 @onready var credits_container: PanelContainer = %CreditsContainer
+@onready var gallery_cg_container: PanelContainer = %GalleryCgContainer
+@onready var gallery_artwork_container: PanelContainer = %GalleryArtworkContainer
+@onready var archive_profiles_container: PanelContainer = %ArchiveProfilesContainer
+@onready var archive_profile_content_container: PanelContainer = %ArchiveProfileContentContainer
 @onready var type_detection_section: VBoxContainer = $Panel/VBoxContainer/TypeDetectionSection
 
 @onready var output_section: HBoxContainer = $Panel/VBoxContainer/OutputSection
 @onready var root_name_section: HBoxContainer = $Panel/VBoxContainer/RootNameSection
 @onready var buttons_container: HBoxContainer = $Panel/VBoxContainer/ButtonsContainer
 
-enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS, CREDITS }
+enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS, CREDITS, GALLERY_CG, GALLERY_ARTWORK, ARCHIVE_PROFILES, ARCHIVE_PROFILE_CONTENT }
 
 # Managers
 var _type_indicator_manager: FileTypeIndicatorManager
@@ -120,7 +126,11 @@ func _create_type_indicator_manager() -> FileTypeIndicatorManager:
 		"game_events": game_events_container,
 		"cutscene_triggers": cutscene_trigger_container,
 		"shop_sets": shop_sets_container,
-		"credits": credits_container
+		"credits": credits_container,
+		"gallery_cg": gallery_cg_container,
+		"gallery_artwork": gallery_artwork_container,
+		"archive_profiles": archive_profiles_container,
+		"archive_profile_content": archive_profile_content_container
 	}
 	var manager = FileTypeIndicatorManager.new(containers, type_detection_section)
 	manager.init_indicators()
@@ -229,6 +239,18 @@ func _on_file_selected(path: String) -> void:
 		FileType.CREDITS:
 			_current_csv_type = CSVConfig.CSVType.CREDITS
 			_ui_state_manager.show_file_type_selected("Credits")
+		FileType.GALLERY_CG:
+			_current_csv_type = CSVConfig.CSVType.GALLERY_CG
+			_ui_state_manager.show_file_type_selected("Gallery CG")
+		FileType.GALLERY_ARTWORK:
+			_current_csv_type = CSVConfig.CSVType.GALLERY_ARTWORK
+			_ui_state_manager.show_file_type_selected("Gallery Artwork")
+		FileType.ARCHIVE_PROFILES:
+			_current_csv_type = CSVConfig.CSVType.ARCHIVE_PROFILES
+			_ui_state_manager.show_file_type_selected("Archive Profiles")
+		FileType.ARCHIVE_PROFILE_CONTENT:
+			_current_csv_type = CSVConfig.CSVType.ARCHIVE_PROFILE_CONTENT
+			_ui_state_manager.show_file_type_selected("Archive Profile Content")
 		_:
 			_load_chapters(path)
 
@@ -356,6 +378,17 @@ func _on_generate_pressed() -> void:
 			_csv_processor.process_shop_sets_csv(csv_path, output_path)
 		FileType.CREDITS:
 			_csv_processor.process_credits_csv(csv_path, output_path)
+		FileType.GALLERY_CG:
+			_csv_processor.process_gallery_cg_csv(csv_path, output_path)
+		FileType.GALLERY_ARTWORK:
+			_csv_processor.process_gallery_artwork_csv(csv_path, output_path)
+		FileType.ARCHIVE_PROFILES:
+			var story_lookup_path := ""
+			if story_lookup_checkbox.button_pressed:
+				story_lookup_path = output_path.get_base_dir().path_join("story_chapter_lookup.json")
+			_csv_processor.process_archive_profiles_csv(csv_path, output_path, story_lookup_path)
+		FileType.ARCHIVE_PROFILE_CONTENT:
+			_csv_processor.process_archive_profile_content_csv(csv_path, output_path)
 		FileType.ITEMS:
 			_current_csv_type = CSVConfig.detect_type(csv_path)
 			if not _is_item_type(_current_csv_type):
@@ -512,11 +545,25 @@ func _update_sections_visibility() -> void:
 		FileType.CREDITS:
 			output_section.visible = true
 			buttons_container.visible = true
+		FileType.GALLERY_CG:
+			output_section.visible = true
+			buttons_container.visible = true
+		FileType.GALLERY_ARTWORK:
+			output_section.visible = true
+			buttons_container.visible = true
+		FileType.ARCHIVE_PROFILES:
+			output_section.visible = true
+			story_lookup_section.visible = true
+			buttons_container.visible = true
+		FileType.ARCHIVE_PROFILE_CONTENT:
+			output_section.visible = true
+			buttons_container.visible = true
 
 func _hide_all_sections() -> void:
 	output_section.visible = false
 	root_name_section.visible = false
 	area_name_section.visible = false
+	story_lookup_section.visible = false
 	buttons_container.visible = false
 	chapter_filter_container.visible = false
 	patron_selection_container.visible = false
