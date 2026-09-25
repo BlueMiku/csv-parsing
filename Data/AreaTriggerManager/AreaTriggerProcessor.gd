@@ -224,7 +224,7 @@ func _parse_csv_line(line: String) -> Array:
 
 
 func _str_or_null(s: String):
-	var t := s.strip_edges()
+	var t := JsonUtils.unescape_literal_control_chars(s.strip_edges())
 	return t if not t.is_empty() else null
 
 

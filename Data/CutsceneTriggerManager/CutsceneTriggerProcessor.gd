@@ -146,7 +146,7 @@ func _str(cols: Array, h: Dictionary, key: String) -> String:
 	if not h.has(key): return ""
 	var idx: int = h[key]
 	if idx >= cols.size(): return ""
-	return cols[idx].strip_edges()
+	return JsonUtils.unescape_literal_control_chars(cols[idx].strip_edges())
 
 func _nullable(cols: Array, h: Dictionary, key: String):
 	var v := _str(cols, h, key)

@@ -1,12 +1,11 @@
 class_name ArchiveProfileProcessor
 extends RefCounted
 
-## Processor untuk Archive List CSV (tab Profiles, Codex, Items, DAN Story —
-## Tutorial masih belum, walau ada di file CSV yang sama).
+## Processor untuk Archive List CSV (tab Profiles, Codex, Items, Story, DAN
+## Tutorial).
 ## Format: No.,Tab,TypeButton,json,ParentFolder,SourceId,ContentFormat,Keterangan,
 ## ButtonTitle,Content,Requirements,image — kolom dideteksi dari header (header-mapped).
-## Baris di-branch berdasarkan kolom Tab; tab lain (Tutorial) dilewati diam-diam
-## untuk saat ini.
+## Baris di-branch berdasarkan kolom Tab.
 ##
 ## -- Tab Profiles --
 ## Baris dikelompokkan berdasarkan kolom "json" (satu entry per karakter), dengan
@@ -59,12 +58,25 @@ extends RefCounted
 ## "requirements": [...], "image", "json" }, ... ] } ], "Items": [ <struktur
 ## sama seperti Codex> ], "Story": [ <struktur sama seperti Codex — folder-level
 ## "requirements" populated here (unlike Codex/Items, always []); item-level
-## "json" berisi tag karakter> ] }
+## "json" berisi tag karakter> ], "Tutorial": [ { "no", "button_title",
+## "content": [...], "content_format", "source_id", "requirements": [...],
+## "image", "json" }, ... ] — flat, tanpa folder wrapper (lihat catatan Tab
+## Tutorial di atas) }
+## -- Tab Tutorial --
+## BEDA dari Codex/Items/Story: Tutorial FLAT, tidak ada baris "folder" sama
+## sekali di CSV (semua baris Tutorial ber-TypeButton "itemlist", ParentFolder
+## selalu kosong) — jadi TIDAK pakai _parse_folder_itemlist_row(). Output-nya
+## array item polos, sama shape-nya dengan item Codex/Items/Story (termasuk
+## "requirements", dicek lewat completed_stories sama seperti Codex/Profiles —
+## unlock Tutorial di gameplay sendiri sudah di-migrasi ke story-flag lewat
+## PlayerCharacter.insert_completed_story(), bukan dict Globals.tutorial_state
+## yang lama lagi) TANPA key "items"/folder wrapper.
+##
 ## process_to_file() menulis ke output_path dengan merge, bukan overwrite —
 ## key top-level lain yang sudah ada di file itu dipertahankan; hanya key
-## "Profiles", "Codex", "Items", dan "Story" yang diganti. Parameter opsional
-## story_lookup_output_path menulis build_story_chapter_lookup()'s hasil ke
-## file TERPISAH (bukan merge — selalu ditimpa ulang, data turunan murni).
+## "Profiles", "Codex", "Items", "Story", dan "Tutorial" yang diganti. Parameter
+## opsional story_lookup_output_path menulis build_story_chapter_lookup()'s
+## hasil ke file TERPISAH (bukan merge — selalu ditimpa ulang, data turunan murni).
 
 var _errors: Array[String] = []
 
@@ -104,6 +116,7 @@ func process(csv_path: String) -> Dictionary:
 	var items_folders_by_no: Dictionary = {}
 	var story_folders: Array = []
 	var story_folders_by_no: Dictionary = {}
+	var tutorial_items: Array = []
 	var skipped := 0
 
 	for i in range(1, lines.size()):
@@ -147,7 +160,22 @@ func process(csv_path: String) -> Dictionary:
 		elif tab_lower == "story":
 			if not _parse_folder_itemlist_row(cols, hmap, no_val, "Story", story_folders, story_folders_by_no):
 				skipped += 1
-		# Tab lain (Tutorial) — belum diproses, dilewati diam-diam.
+
+		elif tab_lower == "tutorial":
+			var button_title := _col(cols, hmap, "buttontitle")
+			if button_title.is_empty():
+				skipped += 1
+				continue
+			tutorial_items.append({
+				"no": no_val,
+				"button_title": button_title,
+				"content": _split_list(_col(cols, hmap, "content")),
+				"content_format": _col(cols, hmap, "contentformat"),
+				"source_id": _col(cols, hmap, "sourceid"),
+				"requirements": _split_list(_col(cols, hmap, "requirements")),
+				"image": _col(cols, hmap, "image"),
+				"json": _col(cols, hmap, "json"),
+			})
 
 	var profiles: Array = []
 	for json_key in profile_groups.keys():
@@ -155,7 +183,7 @@ func process(csv_path: String) -> Dictionary:
 		entry["stages"].sort_custom(func(a, b): return a["no"] < b["no"])
 		profiles.append(entry)
 
-	var data := {"Profiles": profiles, "Codex": codex_folders, "Items": items_folders, "Story": story_folders}
+	var data := {"Profiles": profiles, "Codex": codex_folders, "Items": items_folders, "Story": story_folders, "Tutorial": tutorial_items}
 	var json_str := JSON.stringify(data, "\t")
 
 	return {
@@ -169,6 +197,8 @@ func process(csv_path: String) -> Dictionary:
 		"items_folder_count": items_folders.size(),
 		"story": story_folders,
 		"story_folder_count": story_folders.size(),
+		"tutorial": tutorial_items,
+		"tutorial_count": tutorial_items.size(),
 		"skipped_count": skipped,
 		"errors": _errors.duplicate()
 	}
@@ -260,6 +290,7 @@ func process_to_file(csv_path: String, output_path: String, story_lookup_output_
 	merged_data["Codex"] = result["codex"]
 	merged_data["Items"] = result["items"]
 	merged_data["Story"] = result["story"]
+	merged_data["Tutorial"] = result["tutorial"]
 	var merged_json_str := JSON.stringify(merged_data, "\t")
 
 	var out_file := FileAccess.open(output_path, FileAccess.WRITE)
@@ -316,7 +347,7 @@ func _col(cols: Array, h: Dictionary, key: String) -> String:
 	var idx: int = h[key]
 	if idx >= cols.size():
 		return ""
-	return str(cols[idx]).strip_edges()
+	return JsonUtils.unescape_literal_control_chars(str(cols[idx]).strip_edges())
 
 
 ## Split kolom comma-separated (Content, Requirements) menjadi array string,

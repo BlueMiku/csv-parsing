@@ -407,7 +407,7 @@ func _process_row(row: Array, row_number: int = 0) -> Dictionary:
 				if nested_col_index < 0 or nested_col_index >= row.size():
 					nested_result[nested_key] = nested_default
 					continue
-				var nested_raw = row[nested_col_index].strip_edges()
+				var nested_raw = JsonUtils.unescape_literal_control_chars(row[nested_col_index].strip_edges())
 				var nested_context = "Baris %d [ID: %s], Kolom: %s.%s" % [row_number, row_id, field_name, nested_key]
 				nested_result[nested_key] = FieldTransformers.transform(nested_raw, nested_type, nested_default, error_log, nested_context, row_id, row_number, "%s.%s" % [field_name, nested_key])
 			result[field_name] = nested_result
@@ -431,8 +431,8 @@ func _process_row(row: Array, row_number: int = 0) -> Dictionary:
 		if column_index >= row.size() or column_index < 0:
 			result[field_name] = default_value
 			continue
-		
-		var raw_value = row[column_index].strip_edges()
+
+		var raw_value = JsonUtils.unescape_literal_control_chars(row[column_index].strip_edges())
 		var context = "Baris %d [ID: %s], Kolom: %s" % [row_number, row_id, field_name]
 		result[field_name] = FieldTransformers.transform(raw_value, field_type, default_value, error_log, context, row_id, row_number, field_name)
 	

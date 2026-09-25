@@ -114,7 +114,7 @@ func _col(cols: Array, h: Dictionary, key: String) -> String:
 	var idx: int = h[key]
 	if idx >= cols.size():
 		return ""
-	return str(cols[idx]).strip_edges()
+	return JsonUtils.unescape_literal_control_chars(str(cols[idx]).strip_edges())
 
 
 # ── CSV parser ────────────────────────────────────────────────────────────────

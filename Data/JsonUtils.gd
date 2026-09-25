@@ -16,6 +16,41 @@ static func escape_json_string(s: String) -> String:
 	return s
 
 
+## Konversi escape sequence literal \n, \r, \t (dua karakter: backslash +
+## huruf, mis. diketik manual oleh penulis dialog sebagai penanda baris baru)
+## menjadi karakter kontrol sungguhan. Dipanggil saat field CSV dibaca, SEBELUM
+## nilainya diproses lebih lanjut — supaya escape_json_string() (yang sudah
+## benar meng-escape newline/tab asli jadi \n tunggal) tidak melihat backslash
+## literal itu lagi dan menggandakannya jadi \\n. Backslash lain yang tidak
+## diikuti n/r/t dibiarkan apa adanya (bukan literal escape sequence).
+static func unescape_literal_control_chars(s: String) -> String:
+	if s.find("\\") == -1:
+		return s
+
+	var result := ""
+	var i := 0
+	var length := s.length()
+	while i < length:
+		var c := s[i]
+		if c == "\\" and i + 1 < length:
+			var next := s[i + 1]
+			if next == "n":
+				result += "\n"
+				i += 2
+				continue
+			elif next == "r":
+				result += "\r"
+				i += 2
+				continue
+			elif next == "t":
+				result += "\t"
+				i += 2
+				continue
+		result += c
+		i += 1
+	return result
+
+
 ## Konversi value ke JSON string dengan preservasi tipe integer
 static func value_to_json(value: Variant, indent_level: int = 0, indent_string: String = DEFAULT_INDENT, compact_arrays: bool = true) -> String:
 	if value is String:

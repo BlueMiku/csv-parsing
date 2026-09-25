@@ -37,8 +37,55 @@ func should_confirm_merge(type: CSVConfig.CSVType) -> bool:
 	return false
 
 
+## Cari file Ingredient CSV pertama di dalam folder, lalu bangun lookup
+## nama ingredient (lowercase) -> IngredientId dari data sesungguhnya.
+## Mengembalikan Dictionary kosong jika tidak ada file Ingredient ditemukan.
+func _load_ingredient_lookup(folder_path: String) -> Dictionary:
+	var dir := DirAccess.open(folder_path)
+	if dir == null:
+		return {}
+
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.ends_with(".csv"):
+			var full_path := folder_path.path_join(file_name)
+			if CSVConfig.detect_type(full_path) == CSVConfig.CSVType.INGREDIENT:
+				dir.list_dir_end()
+				return _parse_ingredient_lookup(full_path)
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	return {}
+
+
+## Parse satu file Ingredient CSV menjadi lookup nama (lowercase) -> IngredientId.
+## Menggunakan schema Ingredient yang sudah ada (DataSchemas.get_ingredient_config)
+## supaya konsisten dengan hasil parsing Ingredient CSV yang sebenarnya.
+func _parse_ingredient_lookup(ingredient_csv_path: String) -> Dictionary:
+	var lookup: Dictionary = {}
+
+	_parser.configure_for_ingredient()
+	_parser.set_parse_mode(CSVParser.ParseMode.FULL_VALIDATION)
+	if not _parser.parse_csv_from_path(ingredient_csv_path):
+		return lookup
+
+	for row in _parser.get_data_as_array():
+		var name: String = str(row.get("nameEnglish", "")).strip_edges().to_lower()
+		if not name.is_empty():
+			lookup[name] = row.get("id", -1)
+
+	return lookup
+
+
 ## Process single CSV file
 func process_single_csv(csv_path: String, output_path: String, csv_type: CSVConfig.CSVType, selected_groups: Array, root_name: String) -> void:
+	FieldTransformers.clear_ingredient_lookup()
+	if csv_type == CSVConfig.CSVType.RECIPE:
+		var ingredient_lookup := _load_ingredient_lookup(csv_path.get_base_dir())
+		if ingredient_lookup.is_empty():
+			push_warning("[CSVProcessor] Tidak ditemukan file Ingredient CSV di folder yang sama dengan Recipe CSV. base_ingredient_id/seasoning_x_id akan menjadi -1.")
+		FieldTransformers.set_ingredient_lookup(ingredient_lookup)
+
 	CSVConfig.configure_all(_parser, _json_generator, csv_type)
 	processing_started.emit("Memproses CSV...")
 	
@@ -133,7 +180,14 @@ func process_batch_merge(base_csv_path: String, final_output_path: String) -> vo
 		return
 	
 	processing_started.emit("Memproses %d file CSV..." % csv_files.size())
-	
+
+	# Bangun lookup ingredient dulu (jika ada file Ingredient di folder ini)
+	# supaya Recipe CSV bisa resolve base_ingredient_id/seasoning_x_id dengan benar.
+	var ingredient_lookup := _load_ingredient_lookup(folder_path)
+	if ingredient_lookup.is_empty():
+		push_warning("[CSVProcessor] Tidak ditemukan file Ingredient CSV di folder ini. base_ingredient_id/seasoning_x_id pada Recipe akan menjadi -1.")
+	FieldTransformers.set_ingredient_lookup(ingredient_lookup)
+
 	var temp_json_paths: Array[String] = []
 	var all_errors: Array[String] = []
 	var skipped_files: Array[String] = []
@@ -506,9 +560,10 @@ func process_archive_profiles_csv(csv_path: String, output_path: String, story_l
 	var codex_folder_count: int = result.get("codex_folder_count", 0)
 	var items_folder_count: int = result.get("items_folder_count", 0)
 	var story_folder_count: int = result.get("story_folder_count", 0)
+	var tutorial_count: int = result.get("tutorial_count", 0)
 	var skipped: int = result.get("skipped_count", 0)
 	var skip_note := (" (%d baris di-skip)" % skipped) if skipped > 0 else ""
-	var status_msg := "Berhasil! %d profile, %d folder codex, %d folder items, %d folder story diekspor%s → %s" % [profiles_count, codex_folder_count, items_folder_count, story_folder_count, skip_note, output_path]
+	var status_msg := "Berhasil! %d profile, %d folder codex, %d folder items, %d folder story, %d tutorial diekspor%s → %s" % [profiles_count, codex_folder_count, items_folder_count, story_folder_count, tutorial_count, skip_note, output_path]
 	if result.has("story_lookup_output_path"):
 		status_msg += " (+ %d entry chapter lookup → %s)" % [result.get("story_lookup_count", 0), result["story_lookup_output_path"]]
 

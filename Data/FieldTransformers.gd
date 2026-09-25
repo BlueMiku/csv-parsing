@@ -3,6 +3,20 @@ extends RefCounted
 
 ## Skrip untuk mengubah value field berdasarkan type
 
+## Lookup dinamis nama ingredient (lowercase) -> IngredientId, dibangun dari
+## file Ingredient CSV yang sesungguhnya. Diisi oleh CSVProcessor sebelum
+## parsing Recipe CSV supaya base_ingredient_id / seasoning_x_id selalu
+## mengikuti data ingredient terbaru, bukan tabel hardcoded.
+static var _ingredient_id_lookup: Dictionary = {}
+
+## Set lookup nama ingredient -> id (dipanggil sebelum parsing Recipe CSV)
+static func set_ingredient_lookup(lookup: Dictionary) -> void:
+	_ingredient_id_lookup = lookup
+
+## Kosongkan lookup ingredient (dipanggil saat mulai memproses CSV non-Recipe)
+static func clear_ingredient_lookup() -> void:
+	_ingredient_id_lookup = {}
+
 ## Buat error dictionary dengan detail
 static func create_error(msg: String, r_id: String = "", line: int = 0, field: String = "", is_fatal: bool = false) -> Dictionary:
 	return {
@@ -313,35 +327,16 @@ static func parse_traits(field: String, error_log: Array = [], context: String =
 
 
 ## Parse recipe ingredient name to ID
-## Returns -1 for invalid ingredients (-, Bebas, empty)
+## Returns -1 for invalid ingredients (-, Bebas, empty) or names not found
+## in the dynamic ingredient lookup (see set_ingredient_lookup)
 static func parse_recipe_ingredient(raw_value: String) -> int:
 	var trimmed = raw_value.strip_edges()
 	if trimmed.is_empty() or trimmed == "-" or trimmed.to_lower() == "bebas":
 		return -1
-	# Ingredient ID mapping
-	var base_map = {
-		"red meat": 1,
-		"poultry": 2,
-		"seafood": 3,
-		"tofu": 4,
-	}
-	
-	var seasoning_map = {
-		"peanut sauce": 5,
-		"soy sauce": 9,
-		"butter": 11,
-		"shoyu": 15
-	}
-	
-	var ingredient_map = {}
-	for k in base_map.keys():
-		ingredient_map[k] = base_map[k]
-	for k in seasoning_map.keys():
-		ingredient_map[k] = seasoning_map[k]
-	
+
 	var key = trimmed.to_lower()
-	if ingredient_map.has(key):
-		return ingredient_map[key]
+	if _ingredient_id_lookup.has(key):
+		return _ingredient_id_lookup[key]
 	return -1
 
 ## Return sebagai kombinasi teks (e.g., "Light  Luxurious")
