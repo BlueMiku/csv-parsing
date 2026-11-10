@@ -25,6 +25,7 @@ enum CSVType {
 	GALLERY_ARTWORK,
 	ARCHIVE_PROFILES,
 	ARCHIVE_PROFILE_CONTENT,
+	EXTRA_FUNCTIONS,
 	UNKNOWN
 }
 
@@ -197,6 +198,14 @@ const TYPE_CONFIGS: Dictionary = {
 		"required_headers": ["id", "content_name", "content"],
 		"is_custom_processor": true
 	},
+	CSVType.EXTRA_FUNCTIONS: {
+		"name": "extra_functions",
+		"group_label": "functions",
+		"root_name": "",
+		"header_patterns": [["extra_function_name"]],
+		"required_headers": ["extra_function_name"],
+		"is_custom_processor": true
+	},
 	CSVType.UNKNOWN: {
 		"name": "unknown",
 		"group_label": "items",
@@ -292,6 +301,11 @@ static func _detect_from_header(header: String, suppress_warning: bool = false) 
 	for pattern in TYPE_CONFIGS[CSVType.ARCHIVE_PROFILE_CONTENT]["header_patterns"]:
 		if _matches_pattern(header, pattern):
 			return CSVType.ARCHIVE_PROFILE_CONTENT
+
+	# Check EXTRA_FUNCTIONS (per-NPC extra function / request sheet)
+	for pattern in TYPE_CONFIGS[CSVType.EXTRA_FUNCTIONS]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.EXTRA_FUNCTIONS
 
 	# Check GAME_SETTINGS type first (GameSettings.csv)
 	for pattern in TYPE_CONFIGS[CSVType.GAME_SETTINGS]["header_patterns"]:
@@ -412,6 +426,8 @@ static func configure_parser(parser: Node, csv_type: CSVType) -> void:
 			pass  # Tipe ini menggunakan processor khusus di ArchiveProfileProcessor
 		CSVType.ARCHIVE_PROFILE_CONTENT:
 			pass  # Tipe ini menggunakan processor khusus di ArchiveProfileContentProcessor
+		CSVType.EXTRA_FUNCTIONS:
+			pass  # Tipe ini menggunakan processor khusus di ExtraFunctionsProcessor
 
 
 ## Configure generator berdasarkan tipe CSV
@@ -460,6 +476,8 @@ static func configure_generator(generator: Node, csv_type: CSVType) -> void:
 			pass  # Tipe ini menggunakan processor khusus di ArchiveProfileProcessor
 		CSVType.ARCHIVE_PROFILE_CONTENT:
 			pass  # Tipe ini menggunakan processor khusus di ArchiveProfileContentProcessor
+		CSVType.EXTRA_FUNCTIONS:
+			pass  # Tipe ini menggunakan processor khusus di ExtraFunctionsProcessor
 
 
 ## Konfigurasi parser dan generator secara bersamaan

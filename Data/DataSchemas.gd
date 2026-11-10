@@ -26,6 +26,8 @@ static func get_dialog_schema() -> Dictionary:
 		"music_effect": {"header_name": "music_effect", "type": "string", "default": ""},
 		"cg": {"header_name": "cg", "type": "cg", "default": []},
 		"toggle_interactable": {"header_name": "toggle_interactable", "type": "array", "default": []},
+		"day_skip": {"header_name": "day_skip", "type": "int", "default": 0},
+		"tv_chapter": {"header_name": "tv_chapter", "type": "string", "default": ""},
 	}
 
 ## Key order untuk dialog JSON output
@@ -35,7 +37,8 @@ static func get_dialog_key_order() -> Array:
 		"left", "middle_left", "middle", "middle_right", "right",
 		"scene_properties", "dialogue_choice", "next_line_properties",
 		"give_item", "chapterid", "goto",
-		"special_effects", "sound_effect", "music_effect", "cg", "toggle_interactable"
+		"special_effects", "sound_effect", "music_effect", "cg", "toggle_interactable",
+		"day_skip", "tv_chapter"
 	]
 
 ## Dialog parser configuration

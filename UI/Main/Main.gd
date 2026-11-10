@@ -44,13 +44,14 @@ extends Control
 @onready var gallery_artwork_container: PanelContainer = %GalleryArtworkContainer
 @onready var archive_profiles_container: PanelContainer = %ArchiveProfilesContainer
 @onready var archive_profile_content_container: PanelContainer = %ArchiveProfileContentContainer
+@onready var extra_functions_container: PanelContainer = %ExtraFunctionsContainer
 @onready var type_detection_section: VBoxContainer = $Panel/VBoxContainer/TypeDetectionSection
 
 @onready var output_section: HBoxContainer = $Panel/VBoxContainer/OutputSection
 @onready var root_name_section: HBoxContainer = $Panel/VBoxContainer/RootNameSection
 @onready var buttons_container: HBoxContainer = $Panel/VBoxContainer/ButtonsContainer
 
-enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS, CREDITS, GALLERY_CG, GALLERY_ARTWORK, ARCHIVE_PROFILES, ARCHIVE_PROFILE_CONTENT }
+enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS, CREDITS, GALLERY_CG, GALLERY_ARTWORK, ARCHIVE_PROFILES, ARCHIVE_PROFILE_CONTENT, EXTRA_FUNCTIONS }
 
 # Managers
 var _type_indicator_manager: FileTypeIndicatorManager
@@ -61,6 +62,7 @@ var _csv_processor: CSVProcessor
 var _ui_state_manager: UIStateManager
 var _dialog_manager: DialogManager
 var _validator: CSVTypeValidator
+var _update_manager: UpdateManager
 
 # Core components (tetap di Main untuk lifecycle management)
 var _parser: Node
@@ -82,6 +84,12 @@ func _ready() -> void:
 	_connect_signals()
 	_hide_all_sections()
 	_ui_state_manager.show_type_selection_required()
+
+	# Tampilkan versi di judul window, lalu cek update di background
+	get_window().title = "%s v%s" % [ProjectSettings.get_setting("application/config/name"), UpdateManager.current_version()]
+	_update_manager = UpdateManager.new()
+	add_child(_update_manager)
+	_update_manager.check_for_updates.call_deferred()
 
 func _init_managers() -> void:
 	# Initialize core components
@@ -130,7 +138,8 @@ func _create_type_indicator_manager() -> FileTypeIndicatorManager:
 		"gallery_cg": gallery_cg_container,
 		"gallery_artwork": gallery_artwork_container,
 		"archive_profiles": archive_profiles_container,
-		"archive_profile_content": archive_profile_content_container
+		"archive_profile_content": archive_profile_content_container,
+		"extra_functions": extra_functions_container
 	}
 	var manager = FileTypeIndicatorManager.new(containers, type_detection_section)
 	manager.init_indicators()
@@ -251,6 +260,9 @@ func _on_file_selected(path: String) -> void:
 		FileType.ARCHIVE_PROFILE_CONTENT:
 			_current_csv_type = CSVConfig.CSVType.ARCHIVE_PROFILE_CONTENT
 			_ui_state_manager.show_file_type_selected("Archive Profile Content")
+		FileType.EXTRA_FUNCTIONS:
+			_current_csv_type = CSVConfig.CSVType.EXTRA_FUNCTIONS
+			_ui_state_manager.show_file_type_selected("Extra Functions")
 		_:
 			_load_chapters(path)
 
@@ -389,6 +401,8 @@ func _on_generate_pressed() -> void:
 			_csv_processor.process_archive_profiles_csv(csv_path, output_path, story_lookup_path)
 		FileType.ARCHIVE_PROFILE_CONTENT:
 			_csv_processor.process_archive_profile_content_csv(csv_path, output_path)
+		FileType.EXTRA_FUNCTIONS:
+			_csv_processor.process_extra_functions_csv(csv_path, output_path)
 		FileType.ITEMS:
 			_current_csv_type = CSVConfig.detect_type(csv_path)
 			if not _is_item_type(_current_csv_type):
@@ -556,6 +570,9 @@ func _update_sections_visibility() -> void:
 			story_lookup_section.visible = true
 			buttons_container.visible = true
 		FileType.ARCHIVE_PROFILE_CONTENT:
+			output_section.visible = true
+			buttons_container.visible = true
+		FileType.EXTRA_FUNCTIONS:
 			output_section.visible = true
 			buttons_container.visible = true
 

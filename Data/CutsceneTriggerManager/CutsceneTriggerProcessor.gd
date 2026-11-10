@@ -2,9 +2,12 @@ class_name CutsceneTriggerProcessor
 extends RefCounted
 
 ## Processor untuk CutsceneTriggerReqs CSV
-## Format: day, chapter_to_trigger, priority, expired_on, start_at,
-##         start_at_delay, area_lv_requirement, item_requirement_1/2/3
+## Format: Moment, day, chapter_to_trigger, priority, expired_on, start_at_1,
+##         start_at_2, start_at_delay, area_lv_requirement, item_requirement_1/2/3
 ## Kolom dideteksi dari header (header-mapped), bukan posisi tetap.
+## Output: { "<Moment>": [ { row }, ... ], ... } — baris dikelompokkan per nilai
+## kolom Moment (mis. NewDay, BeforeOpen, AfterClose) sesuai urutan kemunculan
+## pertama di CSV; Moment tidak ikut ditulis di dalam objek row.
 
 var _errors: Array[String] = []
 
@@ -16,41 +19,65 @@ func process(csv_path: String) -> Dictionary:
 	if file == null:
 		return _fail("Gagal membuka file CSV: " + csv_path)
 
-	var csv_text := file.get_as_text()
-	file.close()
-
-	var lines := csv_text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
-
-	if lines.size() < 2:
-		return _fail("CSV harus memiliki header row dan setidaknya satu baris data.")
+	# get_csv_line() membaca satu record CSV utuh, termasuk sel dengan newline di
+	# dalam kutip (mis. kolom catatan multi-baris), jadi tidak perlu split per baris.
+	var raw_headers := file.get_csv_line()
+	if raw_headers.size() > 0:
+		raw_headers[0] = raw_headers[0].trim_prefix("﻿")  # buang BOM jika ada
 
 	# Build header → index map (case-insensitive, strip whitespace)
-	var raw_headers := _parse_line(lines[0])
 	var hmap: Dictionary = {}
 	for i in range(raw_headers.size()):
 		hmap[raw_headers[i].strip_edges().to_lower()] = i
 
-	var rows: Array = []
-	var skipped: int = 0
+	if not hmap.has("moment"):
+		file.close()
+		return _fail("Header CSV tidak sesuai — dibutuhkan kolom Moment.")
 
-	for i in range(1, lines.size()):
-		var line := lines[i].strip_edges()
-		if line.is_empty():
+	var moments: Dictionary = {}  # moment -> Array of row, insertion-ordered
+	var rows_count: int = 0
+	var skipped: int = 0
+	var record_num: int = 1  # header = baris 1, sama seperti nomor baris di sheet
+	var has_data: bool = false
+
+	while not file.eof_reached():
+		var cols := Array(file.get_csv_line())
+		record_num += 1
+		if _is_blank_record(cols):
 			continue
-		var cols := _parse_line(line)
-		var row := _build_row(cols, hmap, i + 1)
+		has_data = true
+
+		var row := _build_row(cols, hmap, record_num)
 		if row.is_empty():
 			skipped += 1
 			continue
-		rows.append(row)
 
-	var json_str := JSON.stringify(rows, "\t")
+		var moment := _str(cols, hmap, "moment")
+		if moment.is_empty():
+			_errors.append("Baris %d: kolom Moment kosong untuk '%s', baris dilewati." % [record_num, row["chapter_to_trigger"]])
+			skipped += 1
+			continue
+
+		if not moments.has(moment):
+			moments[moment] = []
+		moments[moment].append(row)
+		rows_count += 1
+
+	file.close()
+
+	if not has_data:
+		return _fail("CSV harus memiliki header row dan setidaknya satu baris data.")
+
+	# sort_keys=false: urutan Moment mengikuti CSV; key di dalam row sudah
+	# disusun alfabetis di _build_row().
+	var json_str := JSON.stringify(moments, "  ", false)
 
 	return {
 		"success": true,
 		"json_string": json_str,
-		"rows": rows,
-		"rows_count": rows.size(),
+		"moments": moments,
+		"moments_count": moments.size(),
+		"rows_count": rows_count,
 		"skipped_count": skipped,
 		"errors": _errors.duplicate()
 	}
@@ -82,17 +109,19 @@ func _build_row(cols: Array, h: Dictionary, row_num: int) -> Dictionary:
 	if chapter.is_empty():
 		return {}
 
+	# Key disusun alfabetis supaya cocok dengan CutsceneTriggers.json (sort_keys=false saat stringify)
 	return {
-		"day":                  _int(cols, h, "day", -1),
-		"chapter_to_trigger":   chapter,
-		"priority":             _int(cols, h, "priority", 0),
-		"expired_on":           _nullable(cols, h, "expired_on"),
-		"start_at":             _nullable(cols, h, "start_at"),
-		"start_at_delay":       _int(cols, h, "start_at_delay", 0),
 		"area_lv_requirement":  _parse_area_lv_req(cols, h, "area_lv_requirement", row_num),
+		"chapter_to_trigger":   chapter,
+		"day":                  _int(cols, h, "day", -1),
+		"expired_on":           _nullable(cols, h, "expired_on"),
 		"item_requirement_1":   _parse_item_req(cols, h, "item_requirement_1", row_num),
 		"item_requirement_2":   _parse_item_req(cols, h, "item_requirement_2", row_num),
 		"item_requirement_3":   _parse_item_req(cols, h, "item_requirement_3", row_num),
+		"priority":             _int(cols, h, "priority", 0),
+		"start_at_1":           _nullable(cols, h, "start_at_1"),
+		"start_at_2":           _nullable(cols, h, "start_at_2"),
+		"start_at_delay":       _int(cols, h, "start_at_delay", 0),
 	}
 
 
@@ -157,38 +186,10 @@ func _int(cols: Array, h: Dictionary, key: String, default: int) -> int:
 	if s.is_empty() or not s.is_valid_int(): return default
 	return s.to_int()
 
-
-# ── CSV parser ────────────────────────────────────────────────────────────────
-
-## Escaped-quote pairs ("") need BOTH characters consumed as one unit — a
-## plain `for i in range(...)` loop can't skip an index, so the previous
-## version appended the literal quote for the first "" but then reprocessed
-## the second quote as an independent (wrong) toggle, desyncing in_quotes
-## for the rest of the line whenever a field contained escaped quotes. Any
-## comma after that point got read as a real delimiter instead of literal
-## content, corrupting the field and every column after it on that row.
-func _parse_line(line: String) -> Array:
-	var result: Array = []
-	var field := ""
-	var in_quotes := false
-	var i := 0
-	var length := line.length()
-	while i < length:
-		var c := line[i]
-		if c == '"':
-			if in_quotes and i + 1 < length and line[i + 1] == '"':
-				field += '"'
-				i += 1  # also consume the second quote of the escaped pair
-			else:
-				in_quotes = !in_quotes
-		elif c == ',' and not in_quotes:
-			result.append(field)
-			field = ""
-		else:
-			field += c
-		i += 1
-	result.append(field)
-	return result
+## Baris yang benar-benar kosong (tanpa koma sama sekali), mis. baris akhir file.
+## Baris seperti ",,,," tetap dihitung sebagai data lalu di-skip di _build_row().
+func _is_blank_record(cols: Array) -> bool:
+	return cols.is_empty() or (cols.size() == 1 and str(cols[0]).strip_edges().is_empty())
 
 
 func _fail(msg: String) -> Dictionary:

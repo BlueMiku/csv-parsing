@@ -12,6 +12,7 @@ var _errors: Array[String] = []
 # Format flags — di-set saat process() membaca header
 var _k: int = 0   # 1 jika ada kolom Keterangan di col 0
 var _o: int = 0   # 1 jika ada kolom item_story
+var _has_slot_game: bool = false   # true jika header "SlotGame" ada tepat setelah SlotE
 
 
 ## Proses file CSV dan kembalikan Dictionary {success, json_string, rows, rows_count, skipped_count, errors}
@@ -43,6 +44,12 @@ func process(csv_path: String, area_name: String) -> Dictionary:
 		if col.strip_edges().to_lower() == "item_story":
 			_o = 1
 			break
+
+	# SlotGame hanya dibaca jika header-nya benar-benar ada di posisi setelah SlotE.
+	# Tanpa ini, CSV lama (tanpa kolom SlotGame) akan membaca catatan di kolom itu sebagai slot.
+	var slot_game_idx := _k + 27 + _o + 15
+	_has_slot_game = header_cols.size() > slot_game_idx \
+		and header_cols[slot_game_idx].strip_edges().to_lower() == "slotgame"
 
 	var rows: Array = []
 	var skipped := 0
@@ -117,7 +124,7 @@ func _parse_row(cols: Array) -> Dictionary:
 	var k := _k
 	var o := _o
 
-	while cols.size() < k + 43 + o:
+	while cols.size() < k + 46 + o:
 		cols.append("")
 
 	var row := {}
@@ -169,12 +176,14 @@ func _parse_row(cols: Array) -> Dictionary:
 	# Object slots — base k+27+o, 3 kolom tiap slot
 	var object_slots := {}
 	var obj_keys := ["A", "B", "C", "D", "E"]
+	if _has_slot_game:
+		obj_keys.append("Game")
 	for n in range(obj_keys.size()):
 		var base    := k + 27 + o + n * 3
 		var scene:   Variant = _str_or_null(cols[base])
 		var lv_s:    String  = cols[base + 1].strip_edges()
 		var content: Variant = _str_or_null(cols[base + 2])
-		if lv_s != "" or content != null:
+		if scene != null or lv_s != "" or content != null:
 			object_slots[obj_keys[n]] = {
 				"scene":          scene,
 				"level_required": int(lv_s) if lv_s.is_valid_int() else -1,

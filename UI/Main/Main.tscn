@@ -290,6 +290,18 @@ text = "Archive Profile Content"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="ExtraFunctionsContainer" type="PanelContainer" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ExtraFunctionsLabel" type="Label" parent="Panel/VBoxContainer/TypeDetectionSection/FileTypeButtons/ExtraFunctionsContainer"]
+layout_mode = 2
+text = "Extra Functions"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="OutputSection" type="HBoxContainer" parent="Panel/VBoxContainer"]
 layout_mode = 2
 
