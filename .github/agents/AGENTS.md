@@ -1,7 +1,7 @@
 ﻿# AGENTS.md — CSV Parsing Tool (Godot 4.5)
 
 ## Project Overview
-A Godot 4.5 desktop tool that converts game data CSV spreadsheets into JSON files. Built for an Izakaya management game. No gameplay logic — only data pipeline and editor UI.
+A Godot 4.5 desktop tool that converts game data CSV spreadsheets into JSON files. Built for the game Afterglow Bytes: Reverie by the Shore. No gameplay logic — only data pipeline and editor UI.
 
 ## Architecture
 
