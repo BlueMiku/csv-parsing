@@ -44,18 +44,6 @@ You need [Godot 4.5](https://godotengine.org/download) (with the Windows export 
 godot --path .
 ```
 
-### Releasing a new version
-
-1. Bump `config/version` in `project.godot`.
-2. Commit and push.
-3. Run the release script. It exports the Windows build, zips it as `AIO-Parser-windows.zip` (the updater looks for that suffix), and uploads it to GitHub Releases using the `gh` CLI:
-
-```powershell
-.\tools\release.ps1 -Publish -Target <commit-sha>
-```
-
-Without `-Publish` it creates a draft, which is invisible to the public and has no tag yet. The script's defaults assume Godot at `D:\Godot\4.5`; override with `-GodotExe`.
-
 ## How it's put together
 
 ```
