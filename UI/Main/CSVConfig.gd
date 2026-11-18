@@ -68,7 +68,7 @@ const TYPE_CONFIGS: Dictionary = {
 	CSVType.KEY_ITEM: {
 		"name": "key_item",
 		"group_label": "items",
-		"root_name": "KeyItems",
+		"root_name": "Key_Items",
 		"header_patterns": [["id", "filename", "name_english", "description", "bonus", "character"]],
 		"required_headers": ["id", "filename", "name_english"]
 	},
