@@ -61,7 +61,7 @@ static func get_key_item_schema() -> Dictionary:
 	return {
 	"id": {"header_name": "ID", "type": "int", "is_id": true},
 	"iconDefault": {"header_name": "filename", "type": "string", "default": ""},
-	"nameEnglish": {"header_name": "name_english", "type": "string", "default": ""},
+	"name": {"header_name": "name_english", "type": "string", "default": ""},
 	"description": {"header_name": "description", "type": "string", "default": ""},
 	"bonus": {"header_name": "bonus", "type": "array", "default": []},
 	"character": {"header_name": "character", "type": "string", "default": ""},
@@ -69,7 +69,7 @@ static func get_key_item_schema() -> Dictionary:
 	
 ## Key order untuk Key Item JSON output	
 static func get_key_item_key_order() -> Array:
-	return ["id", "iconDefault", "nameEnglish", "description", "bonus", "character"]
+	return ["id", "iconDefault", "name", "description", "bonus", "character"]
 	
 ## Key Item parser configuration
 static func get_key_item_config() -> Dictionary:
@@ -87,8 +87,7 @@ static func get_key_item_config() -> Dictionary:
 static func get_ingredient_schema() -> Dictionary:
 	return {
 		"id": {"header_name": "IngredientId", "type": "int", "is_id": true},
-		"nameEnglish": {"header_name": "Ingredient Name", "type": "string", "default": ""},
-		"nameIndonesian": {"header_name": "", "type": "string", "default": null},
+		"name": {"header_name": "Ingredient Name", "type": "string", "default": ""},
 		"description": {"header_name": "Description", "type": "string", "default": ""},
 		"iconBig": {"header_name": "", "type": "string", "default": "placeholder"},
 		"iconHovered": {"header_name": "", "type": "string", "default": "placeholder"},
@@ -111,7 +110,7 @@ static func get_ingredient_schema() -> Dictionary:
 ## Key order untuk Ingredient JSON output
 static func get_ingredient_key_order() -> Array:
 	return [
-		"id", "nameEnglish", "nameIndonesian", "description",
+		"id", "name", "description",
 		"iconBig", "iconHovered", "iconFocused", "iconDefault", "iconFull",
 		"montageName", "traits", "unlockPrice", "shopLocation"
 	]
@@ -131,8 +130,7 @@ static func get_ingredient_config() -> Dictionary:
 static func get_recipe_schema() -> Dictionary:
 	return {
 		"id": {"header_name": "FoodId", "type": "int", "is_id": true},
-		"nameEnglish": {"header_name": "Name", "type": "string", "default": ""},
-		"nameIndonesian": {"header_name": "", "type": "string", "default": null},
+		"name": {"header_name": "Name", "type": "string", "default": ""},
 		"description": {"header_name": "Description", "type": "string", "default": ""},
 		"description1": {"header_name": "Description Custom 1", "type": "string", "default": ""},
 		"description2": {"header_name": "Description Custom 2", "type": "string", "default": ""},
@@ -170,7 +168,7 @@ static func get_recipe_schema() -> Dictionary:
 ## Key order untuk Recipe JSON output
 static func get_recipe_key_order() -> Array:
 	return [
-		"id", "nameEnglish", "nameIndonesian", 
+		"id", "name",
 		"description", "description1", "description2", "description3",
 		"iconBig", "iconHovered", "iconFocused", "iconFull", "iconDefault",
 		"icon3", "icon2", "icon1", "iconEmpty",
@@ -198,8 +196,7 @@ static func get_beverage_schema() -> Dictionary:
 	return {
 		"id": {"header_name": "", "column_index": 0, "type": "int", "default": 0, "is_id": true},
 		"isAlcohol": {"header_name": "type", "type": "alcohol_flag", "default": false},
-		"nameEnglish": {"header_name": "name", "type": "string", "default": ""},
-		"nameIndonesian": {"header_name": "", "type": "string", "default": "placeholder"},
+		"name": {"header_name": "name", "type": "string", "default": ""},
 		"description": {"header_name": "description", "type": "string", "default": ""},
 		"shop": {"header_name": "shop", "type": "string", "default": ""},
 		"keyword": {"header_name": "keywords (unused)", "type": "string", "default": ""},
@@ -216,7 +213,7 @@ static func get_beverage_schema() -> Dictionary:
 ## Key order untuk Beverage JSON output
 static func get_beverage_key_order() -> Array:
 	return [
-		"id", "isAlcohol", "nameEnglish", "nameIndonesian", "description",
+		"id", "isAlcohol", "name", "description",
 		"shop", "keyword", "trait", "iconBig", "iconHovered", "iconFocused",
 		"iconFull", "iconDefault", "buyPrice", "sellPrice"
 	]
@@ -242,7 +239,7 @@ static func get_decoration_schema() -> Dictionary:
 	return {
 		"id": {"header_name": "id", "column_index": 1, "type": "int", "default": 0, "is_id": true},
 		"type": {"header_name": "type", "type": "string", "default": ""},
-		"nameEnglish": {"header_name": "name", "type": "string", "default": ""},
+		"name": {"header_name": "name", "type": "string", "default": ""},
 		"price": {"header_name": "price", "type": "int", "default": 0},
 		"description": {"header_name": "description", "type": "string", "default": ""},
 		"sprite": {"header_name": "", "type": "string", "default": "placeholder"},
@@ -253,7 +250,7 @@ static func get_decoration_schema() -> Dictionary:
 ## Key order untuk Decoration JSON output
 static func get_decoration_key_order() -> Array:
 	return [
-		"id", "type", "nameEnglish", "price",
+		"id", "type", "name", "price",
 		"description", "sprite", "monoslot", "fileName"
 	]
 	

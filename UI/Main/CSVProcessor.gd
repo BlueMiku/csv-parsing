@@ -70,7 +70,7 @@ func _parse_ingredient_lookup(ingredient_csv_path: String) -> Dictionary:
 		return lookup
 
 	for row in _parser.get_data_as_array():
-		var name: String = str(row.get("nameEnglish", "")).strip_edges().to_lower()
+		var name: String = str(row.get("name", "")).strip_edges().to_lower()
 		if not name.is_empty():
 			lookup[name] = row.get("id", -1)
 
