@@ -95,6 +95,7 @@ static func get_ingredient_schema() -> Dictionary:
 		"iconFocused": {"header_name": "", "type": "string", "default": "placeholder"},
 		"iconDefault": {"header_name": "filename_default", "type": "string", "default": ""},
 		"iconFull": {"header_name": "", "type": "string", "default": ""},
+		"montageName": {"header_name": "montage_name", "type": "string", "default": ""},
 		"traits": {
 			"type": "nested",
 			"fields": {
@@ -112,7 +113,7 @@ static func get_ingredient_key_order() -> Array:
 	return [
 		"id", "nameEnglish", "nameIndonesian", "description",
 		"iconBig", "iconHovered", "iconFocused", "iconDefault", "iconFull",
-		"traits", "unlockPrice", "shopLocation"
+		"montageName", "traits", "unlockPrice", "shopLocation"
 	]
 
 ## Ingredient parser configuration
