@@ -45,13 +45,14 @@ extends Control
 @onready var archive_profiles_container: PanelContainer = %ArchiveProfilesContainer
 @onready var archive_profile_content_container: PanelContainer = %ArchiveProfileContentContainer
 @onready var extra_functions_container: PanelContainer = %ExtraFunctionsContainer
+@onready var area_development_container: PanelContainer = %AreaDevelopmentContainer
 @onready var type_detection_section: VBoxContainer = $Panel/VBoxContainer/TypeDetectionSection
 
 @onready var output_section: HBoxContainer = $Panel/VBoxContainer/OutputSection
 @onready var root_name_section: HBoxContainer = $Panel/VBoxContainer/RootNameSection
 @onready var buttons_container: HBoxContainer = $Panel/VBoxContainer/ButtonsContainer
 
-enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS, CREDITS, GALLERY_CG, GALLERY_ARTWORK, ARCHIVE_PROFILES, ARCHIVE_PROFILE_CONTENT, EXTRA_FUNCTIONS }
+enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS, CREDITS, GALLERY_CG, GALLERY_ARTWORK, ARCHIVE_PROFILES, ARCHIVE_PROFILE_CONTENT, EXTRA_FUNCTIONS, AREA_DEVELOPMENT }
 
 # Managers
 var _type_indicator_manager: FileTypeIndicatorManager
@@ -139,7 +140,8 @@ func _create_type_indicator_manager() -> FileTypeIndicatorManager:
 		"gallery_artwork": gallery_artwork_container,
 		"archive_profiles": archive_profiles_container,
 		"archive_profile_content": archive_profile_content_container,
-		"extra_functions": extra_functions_container
+		"extra_functions": extra_functions_container,
+		"area_development": area_development_container
 	}
 	var manager = FileTypeIndicatorManager.new(containers, type_detection_section)
 	manager.init_indicators()
@@ -263,6 +265,9 @@ func _on_file_selected(path: String) -> void:
 		FileType.EXTRA_FUNCTIONS:
 			_current_csv_type = CSVConfig.CSVType.EXTRA_FUNCTIONS
 			_ui_state_manager.show_file_type_selected("Extra Functions")
+		FileType.AREA_DEVELOPMENT:
+			_current_csv_type = CSVConfig.CSVType.AREA_DEVELOPMENT
+			_ui_state_manager.show_file_type_selected("Area Development")
 		_:
 			_load_chapters(path)
 
@@ -403,6 +408,8 @@ func _on_generate_pressed() -> void:
 			_csv_processor.process_archive_profile_content_csv(csv_path, output_path)
 		FileType.EXTRA_FUNCTIONS:
 			_csv_processor.process_extra_functions_csv(csv_path, output_path)
+		FileType.AREA_DEVELOPMENT:
+			_csv_processor.process_area_development_csv(csv_path, output_path)
 		FileType.ITEMS:
 			_current_csv_type = CSVConfig.detect_type(csv_path)
 			if not _is_item_type(_current_csv_type):
@@ -573,6 +580,9 @@ func _update_sections_visibility() -> void:
 			output_section.visible = true
 			buttons_container.visible = true
 		FileType.EXTRA_FUNCTIONS:
+			output_section.visible = true
+			buttons_container.visible = true
+		FileType.AREA_DEVELOPMENT:
 			output_section.visible = true
 			buttons_container.visible = true
 

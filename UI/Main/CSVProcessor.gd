@@ -628,6 +628,33 @@ func process_extra_functions_csv(csv_path: String, output_path: String) -> void:
 	print("[CSVProcessor] Extra Functions JSON saved to: ", output_path)
 
 
+## Process AREA_DEVELOPMENT type CSV (AreaDev sheet -> area_development.json)
+func process_area_development_csv(csv_path: String, output_path: String) -> void:
+	processing_started.emit("Memproses Area Development...")
+
+	var processor := AreaDevelopmentProcessor.new()
+	var result := processor.process_to_file(csv_path, output_path)
+
+	if not result.get("success", false):
+		var errors: Array = result.get("errors", [])
+		processing_error.emit(errors if not errors.is_empty() else ["Gagal memproses file Area Development"])
+		return
+
+	var areas_count: int = result.get("areas_count", 0)
+	var levels_count: int = result.get("levels_count", 0)
+	var skipped: int = result.get("skipped_count", 0)
+	var skip_note := (" (%d baris di-skip)" % skipped) if skipped > 0 else ""
+	var status_msg := "Berhasil! %d area (%d level) diekspor%s → %s" % [areas_count, levels_count, skip_note, output_path]
+
+	var proc_errors: Array = result.get("errors", [])
+	if proc_errors.size() > 0:
+		processing_warning.emit(proc_errors, output_path, [] as Array[String], [] as Array[Dictionary], "", false)
+	else:
+		processing_completed.emit(true, status_msg)
+
+	print("[CSVProcessor] Area Development JSON saved to: ", output_path)
+
+
 ## Process GAME_EVENTS type CSV
 func process_game_events_csv(csv_path: String, output_path: String) -> void:
 	processing_started.emit("Memproses Gameplay Events...")

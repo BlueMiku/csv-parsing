@@ -40,6 +40,7 @@ const CSV_TYPE_TO_FILE_TYPE: Dictionary = {
 	CSVConfig.CSVType.ARCHIVE_PROFILES: 16,        # FileType.ARCHIVE_PROFILES
 	CSVConfig.CSVType.ARCHIVE_PROFILE_CONTENT: 17, # FileType.ARCHIVE_PROFILE_CONTENT
 	CSVConfig.CSVType.EXTRA_FUNCTIONS: 18,         # FileType.EXTRA_FUNCTIONS
+	CSVConfig.CSVType.AREA_DEVELOPMENT: 19,        # FileType.AREA_DEVELOPMENT
 	CSVConfig.CSVType.UNKNOWN: 0              # FileType.NONE
 }
 
@@ -133,6 +134,7 @@ func _get_container_for_type(file_type: int) -> PanelContainer:
 		16: return _containers.get("archive_profiles")
 		17: return _containers.get("archive_profile_content")
 		18: return _containers.get("extra_functions")
+		19: return _containers.get("area_development")
 	return null
 
 
@@ -156,5 +158,6 @@ func _get_all_containers() -> Array:
 		_containers.get("gallery_artwork"),
 		_containers.get("archive_profiles"),
 		_containers.get("archive_profile_content"),
-		_containers.get("extra_functions")
+		_containers.get("extra_functions"),
+		_containers.get("area_development")
 	]

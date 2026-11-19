@@ -26,6 +26,7 @@ enum CSVType {
 	ARCHIVE_PROFILES,
 	ARCHIVE_PROFILE_CONTENT,
 	EXTRA_FUNCTIONS,
+	AREA_DEVELOPMENT,
 	UNKNOWN
 }
 
@@ -206,6 +207,14 @@ const TYPE_CONFIGS: Dictionary = {
 		"required_headers": ["extra_function_name"],
 		"is_custom_processor": true
 	},
+	CSVType.AREA_DEVELOPMENT: {
+		"name": "area_development",
+		"group_label": "areas",
+		"root_name": "",
+		"header_patterns": [["area name", "segment", "reward message"]],
+		"required_headers": ["name", "lv", "price", "segment", "max", "area name", "description", "reward message"],
+		"is_custom_processor": true
+	},
 	CSVType.UNKNOWN: {
 		"name": "unknown",
 		"group_label": "items",
@@ -306,6 +315,11 @@ static func _detect_from_header(header: String, suppress_warning: bool = false) 
 	for pattern in TYPE_CONFIGS[CSVType.EXTRA_FUNCTIONS]["header_patterns"]:
 		if _matches_pattern(header, pattern):
 			return CSVType.EXTRA_FUNCTIONS
+
+	# Check AREA_DEVELOPMENT (AreaDev.csv -> area_development.json)
+	for pattern in TYPE_CONFIGS[CSVType.AREA_DEVELOPMENT]["header_patterns"]:
+		if _matches_pattern(header, pattern):
+			return CSVType.AREA_DEVELOPMENT
 
 	# Check GAME_SETTINGS type first (GameSettings.csv)
 	for pattern in TYPE_CONFIGS[CSVType.GAME_SETTINGS]["header_patterns"]:
@@ -428,6 +442,8 @@ static func configure_parser(parser: Node, csv_type: CSVType) -> void:
 			pass  # Tipe ini menggunakan processor khusus di ArchiveProfileContentProcessor
 		CSVType.EXTRA_FUNCTIONS:
 			pass  # Tipe ini menggunakan processor khusus di ExtraFunctionsProcessor
+		CSVType.AREA_DEVELOPMENT:
+			pass  # Tipe ini menggunakan processor khusus di AreaDevelopmentProcessor
 
 
 ## Configure generator berdasarkan tipe CSV
@@ -478,6 +494,8 @@ static func configure_generator(generator: Node, csv_type: CSVType) -> void:
 			pass  # Tipe ini menggunakan processor khusus di ArchiveProfileContentProcessor
 		CSVType.EXTRA_FUNCTIONS:
 			pass  # Tipe ini menggunakan processor khusus di ExtraFunctionsProcessor
+		CSVType.AREA_DEVELOPMENT:
+			pass  # Tipe ini menggunakan processor khusus di AreaDevelopmentProcessor
 
 
 ## Konfigurasi parser dan generator secara bersamaan
