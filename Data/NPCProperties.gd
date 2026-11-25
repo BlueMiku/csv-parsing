@@ -3,6 +3,16 @@ extends RefCounted
 
 ## Parser dan stringifier khusus untuk NPC Properties
 
+## Prefix usia/jenis pada nama Outfit Sets -> prefix key age_gender di output.
+## "robot" dipetakan ke "automaton" supaya nama lama (RobotMale...) tetap terbaca.
+const AGE_PREFIXES := {
+	"young": "young",
+	"adult": "adult",
+	"old": "old",
+	"automaton": "automaton",
+	"robot": "automaton"
+}
+
 var _colors_data: Dictionary = {}
 var _outfit_data: Dictionary = {}
 var parsing_errors: Array = []
@@ -218,34 +228,49 @@ func _process_outfit_row(row: Array, header_map: Dictionary) -> void:
 	_outfit_data[npc_key][age_gender] = properties
 
 
-## Deteksi age/gender dari outfit set name
+## Deteksi age/gender dari outfit set name, hasilnya "<usia>_<gender>"
+## (young_male, young_female, adult_male, adult_female, old_male, old_female,
+## automaton_male, automaton_female).
 func _detect_age_gender(outfit_set: String) -> String:
-	var lower = outfit_set.to_lower()
-	if lower.contains("youngmale") or lower.contains("young_male"):
-		return "young_male"
-	elif lower.contains("youngfemale") or lower.contains("young_female"):
-		return "young_female"
-	elif lower.contains("oldmale") or lower.contains("old_male"):
-		return "old_male"
-	elif lower.contains("oldfemale") or lower.contains("old_female"):
-		return "old_female"
-	elif lower.contains("male"):
-		return "young_male"
-	elif lower.contains("female"):
+	# Buang underscore supaya "Young_Male" dan "YoungMale" diperlakukan sama
+	var lower = outfit_set.to_lower().replace("_", "")
+	for prefix in AGE_PREFIXES:
+		var age: String = AGE_PREFIXES[prefix]
+		# "female" dicek dulu karena kata itu mengandung "male"
+		if lower.contains(prefix + "female"):
+			return age + "_female"
+		if lower.contains(prefix + "male"):
+			return age + "_male"
+	# Tanpa prefix usia: anggap young
+	if lower.contains("female"):
 		return "young_female"
 	return "young_male"
+
+
+## Ambil bagian tipe dari outfit set, mis. "AdultFemaleEmployee" -> "Employee".
+## Kosong jika outfit set tidak diawali prefix usia yang dikenal.
+func _extract_outfit_type(outfit_set: String) -> String:
+	var lower = outfit_set.to_lower()
+	for prefix in AGE_PREFIXES:
+		if not lower.begins_with(prefix):
+			continue
+		var type_part = outfit_set.substr(prefix.length()).lstrip("_")
+		var rest_lower = type_part.to_lower()
+		if rest_lower.begins_with("female"):
+			type_part = type_part.substr(6)
+		elif rest_lower.begins_with("male"):
+			type_part = type_part.substr(4)
+		return type_part.lstrip("_")
+	return ""
 
 
 ## Generate NPC key dari nama dan outfit set
 func _generate_npc_key(npc_name: String, outfit_set: String) -> String:
 	# Coba extract dari outfit_set jika ada format NPC_Type
-	var lower = outfit_set.to_lower()
-	if lower.begins_with("young"):
-		var type_part = outfit_set.replace("YoungMale", "").replace("YoungFemale", "")
-		type_part = type_part.replace("Young", "").replace("Male", "").replace("Female", "")
-		if not type_part.is_empty():
-			return "NPC_" + type_part
-	
+	var type_part = _extract_outfit_type(outfit_set)
+	if not type_part.is_empty():
+		return "NPC_" + type_part
+
 	# Fallback ke npc_name
 	if npc_name.contains(" "):
 		return npc_name.replace(" ", "_")
