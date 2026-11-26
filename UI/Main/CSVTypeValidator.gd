@@ -30,7 +30,8 @@ func validate_file(path: String, detected_type: CSVConfig.CSVType, patron_loader
 		CSVConfig.CSVType.ARCHIVE_PROFILES, \
 		CSVConfig.CSVType.ARCHIVE_PROFILE_CONTENT, \
 		CSVConfig.CSVType.EXTRA_FUNCTIONS, \
-		CSVConfig.CSVType.AREA_DEVELOPMENT:
+		CSVConfig.CSVType.AREA_DEVELOPMENT, \
+		CSVConfig.CSVType.WORLD_MAP:
 			return { "valid": true }
 
 		_:

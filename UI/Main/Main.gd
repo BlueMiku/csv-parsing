@@ -46,13 +46,14 @@ extends Control
 @onready var archive_profile_content_container: PanelContainer = %ArchiveProfileContentContainer
 @onready var extra_functions_container: PanelContainer = %ExtraFunctionsContainer
 @onready var area_development_container: PanelContainer = %AreaDevelopmentContainer
+@onready var world_map_container: PanelContainer = %WorldMapContainer
 @onready var type_detection_section: VBoxContainer = $Panel/VBoxContainer/TypeDetectionSection
 
 @onready var output_section: HBoxContainer = $Panel/VBoxContainer/OutputSection
 @onready var root_name_section: HBoxContainer = $Panel/VBoxContainer/RootNameSection
 @onready var buttons_container: HBoxContainer = $Panel/VBoxContainer/ButtonsContainer
 
-enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS, CREDITS, GALLERY_CG, GALLERY_ARTWORK, ARCHIVE_PROFILES, ARCHIVE_PROFILE_CONTENT, EXTRA_FUNCTIONS, AREA_DEVELOPMENT }
+enum FileType { NONE, PATRONS, DIALOG, ITEMS, NPC_PROPERTIES, SETTINGS, SFX, MUSIC, BLIP, AREA_TRIGGER, GAME_EVENTS, CUTSCENE_TRIGGERS, SHOP_SETS, CREDITS, GALLERY_CG, GALLERY_ARTWORK, ARCHIVE_PROFILES, ARCHIVE_PROFILE_CONTENT, EXTRA_FUNCTIONS, AREA_DEVELOPMENT, WORLD_MAP }
 
 # Managers
 var _type_indicator_manager: FileTypeIndicatorManager
@@ -141,7 +142,8 @@ func _create_type_indicator_manager() -> FileTypeIndicatorManager:
 		"archive_profiles": archive_profiles_container,
 		"archive_profile_content": archive_profile_content_container,
 		"extra_functions": extra_functions_container,
-		"area_development": area_development_container
+		"area_development": area_development_container,
+		"world_map": world_map_container
 	}
 	var manager = FileTypeIndicatorManager.new(containers, type_detection_section)
 	manager.init_indicators()
@@ -268,6 +270,9 @@ func _on_file_selected(path: String) -> void:
 		FileType.AREA_DEVELOPMENT:
 			_current_csv_type = CSVConfig.CSVType.AREA_DEVELOPMENT
 			_ui_state_manager.show_file_type_selected("Area Development")
+		FileType.WORLD_MAP:
+			_current_csv_type = CSVConfig.CSVType.WORLD_MAP
+			_ui_state_manager.show_file_type_selected("World Map")
 		_:
 			_load_chapters(path)
 
@@ -410,6 +415,8 @@ func _on_generate_pressed() -> void:
 			_csv_processor.process_extra_functions_csv(csv_path, output_path)
 		FileType.AREA_DEVELOPMENT:
 			_csv_processor.process_area_development_csv(csv_path, output_path)
+		FileType.WORLD_MAP:
+			_csv_processor.process_world_map_csv(csv_path, output_path)
 		FileType.ITEMS:
 			_current_csv_type = CSVConfig.detect_type(csv_path)
 			if not _is_item_type(_current_csv_type):
@@ -583,6 +590,9 @@ func _update_sections_visibility() -> void:
 			output_section.visible = true
 			buttons_container.visible = true
 		FileType.AREA_DEVELOPMENT:
+			output_section.visible = true
+			buttons_container.visible = true
+		FileType.WORLD_MAP:
 			output_section.visible = true
 			buttons_container.visible = true
 

@@ -31,6 +31,7 @@ Files with problems still generate; the tool lists the warnings and offers to ju
 | Credits, Gallery CG, Gallery Artwork | One file each. |
 | Archive Profiles, Archive Profile Content | The master archive list and the per-character content sheets. Archive Profiles can also write a chapter lookup file. |
 | Area Development | The AreaDev sheet, written as `area_development.json`. The sheet's levels are shifted by one in the JSON (level N takes its cost, segment and reward from sheet level N+1), and "Bale Banjar" is keyed as `bale` to match the game. Areas are written in the game's existing order. |
+| World Map | The WorldMap sheet, written as `worldmap.json` (`worldmap_locations`). Coordinates and offsets like `"442, 92"` become `[442, 92]`. Values are copied as-is, and the game uses `LocationNode` as an asset folder name and area key, so it has to match those names exactly. |
 | Extra Functions | `extra_function_name` becomes the key, and every other column (except `no`) becomes a field in its object. `requested_item` is split into `[type, id, qty]`. |
 
 ### JSON viewer / editor
